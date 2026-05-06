@@ -378,6 +378,9 @@ function bldRows(type){
     var numIn=document.createElement('input');
     numIn.type='number';numIn.placeholder='0';numIn.min='0';
     numIn.setAttribute('inputmode','decimal');numIn.value=item.amt||'';
+    // Clear 0 on focus so user does not have to manually delete
+    numIn.addEventListener('focus',function(){if(parseFloat(this.value)===0)this.value='';});
+    numIn.addEventListener('blur',function(){if(this.value==='')this.value='0';});
     numIn.addEventListener('input',(function(t,idx){return function(e){updA(t,idx,e.target.value);};})(type,i));
     var xBtn=document.createElement('button');
     xBtn.className='xbtn';xBtn.setAttribute('aria-label','Remove');xBtn.textContent='\u2715';
