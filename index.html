@@ -10,7 +10,8 @@
 <meta name="theme-color" content="#E60000"/>
 <title>Finance</title>
 <!-- Chart.js 4.4.1 inlined — no CDN dependency, works fully offline -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- Chart.js loaded async — app renders immediately without it -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" async></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -832,7 +833,13 @@ curTab=‘Budget’;render();toast(‘All data reset’);
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
-window.addEventListener(‘load’,function(){loadState();render();});
+function boot(){loadState();render();}
+// Boot immediately — do not wait for Chart.js
+if(document.readyState===‘loading’){
+document.addEventListener(‘DOMContentLoaded’,boot);
+} else {
+boot();
+}
 </script>
 
 </body>
