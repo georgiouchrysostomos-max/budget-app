@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -27,75 +28,76 @@
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
 body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow-x:hidden}
 
-.warning-banner{display:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;text-align:center;padding:10px 16px;position:sticky;top:0;z-index:30;letter-spacing:.02em}
+.warning-banner{display:none;background:var(–red);color:#fff;font-size:13px;font-weight:600;text-align:center;padding:10px 16px;position:sticky;top:0;z-index:30;letter-spacing:.02em}
 .warning-banner.show{display:block}
-.app-header{background:var(--red);color:#fff;padding:14px 16px 10px;position:sticky;top:0;z-index:20}
+.app-header{background:var(–red);color:#fff;padding:14px 16px 10px;position:sticky;top:0;z-index:20}
 .warning-banner.show~.app-header{top:38px}
 .app-header h1{font-size:18px;font-weight:700}
 .app-header p{font-size:11px;opacity:.85;margin-top:2px}
 
-.tab-bar{display:flex;overflow-x:auto;background:var(--surface);border-bottom:.5px solid var(--border);position:sticky;top:52px;z-index:19;scrollbar-width:none}
+.tab-bar{display:flex;overflow-x:auto;background:var(–surface);border-bottom:.5px solid var(–border);position:sticky;top:52px;z-index:19;scrollbar-width:none}
 .tab-bar::-webkit-scrollbar{display:none}
 .warning-banner.show~.app-header~.tab-bar{top:90px}
-.tab-btn{padding:10px 14px;border:none;background:none;font-weight:400;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;font-size:12px;flex-shrink:0}
-.tab-btn.active{font-weight:700;color:var(--red);border-bottom-color:var(--red)}
+.tab-btn{padding:10px 14px;border:none;background:none;font-weight:400;color:var(–text-muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;font-size:12px;flex-shrink:0}
+.tab-btn.active{font-weight:700;color:var(–red);border-bottom-color:var(–red)}
 
 .page{padding:14px;padding-bottom:40px;max-width:700px;margin:0 auto}
-.section-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.card{background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);padding:14px;margin-bottom:12px}
+.section-label{font-size:11px;font-weight:600;color:var(–text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.card{background:var(–surface);border-radius:var(–radius);border:.5px solid var(–border);padding:14px;margin-bottom:12px}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.metric{background:var(--gray-light);border-radius:var(--radius-sm);padding:12px}
-.metric-label{font-size:11px;color:var(--text-muted);margin-bottom:3px}
-.metric-value{font-size:20px;font-weight:700;color:var(--text)}
-.metric-value.pos{color:var(--green)}
-.metric-value.neg{color:var(--red-dark)}
+.metric{background:var(–gray-light);border-radius:var(–radius-sm);padding:12px}
+.metric-label{font-size:11px;color:var(–text-muted);margin-bottom:3px}
+.metric-value{font-size:20px;font-weight:700;color:var(–text)}
+.metric-value.pos{color:var(–green)}
+.metric-value.neg{color:var(–red-dark)}
 
 .input-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-.input-row input[type="text"]{flex:1;font-size:14px;padding:8px 10px;border-radius:var(--radius-sm);border:.5px solid var(--border);background:var(--bg);color:var(--text)}
-.input-row input[type="number"]{width:110px;font-size:14px;padding:8px 10px;border-radius:var(--radius-sm);border:.5px solid var(--border);background:var(--bg);color:var(--text)}
-.input-row.over-budget input{border-color:var(--red)!important;background:var(--red-light)!important}
-input:focus{outline:2px solid var(--red);outline-offset:1px}
-.remove-btn{background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;padding:0 4px;line-height:1}
-.add-btn{width:100%;font-size:13px;color:var(--text-muted);background:none;border:.5px dashed var(--border);border-radius:var(--radius-sm);padding:8px;cursor:pointer;margin-top:4px}
+.input-row input[type=“text”]{flex:1;font-size:14px;padding:8px 10px;border-radius:var(–radius-sm);border:.5px solid var(–border);background:var(–bg);color:var(–text)}
+.input-row input[type=“number”]{width:110px;font-size:14px;padding:8px 10px;border-radius:var(–radius-sm);border:.5px solid var(–border);background:var(–bg);color:var(–text)}
+.input-row.over-budget input{border-color:var(–red)!important;background:var(–red-light)!important}
+input:focus{outline:2px solid var(–red);outline-offset:1px}
+.remove-btn{background:none;border:none;font-size:20px;color:var(–text-muted);cursor:pointer;padding:0 4px;line-height:1}
+.add-btn{width:100%;font-size:13px;color:var(–text-muted);background:none;border:.5px dashed var(–border);border-radius:var(–radius-sm);padding:8px;cursor:pointer;margin-top:4px}
 
 .btn-row{display:flex;gap:8px;margin-bottom:14px}
-.btn{flex:1;font-size:14px;font-weight:500;padding:11px;border-radius:var(--radius-sm);cursor:pointer;border:.5px solid var(--border);background:var(--surface);color:var(--text)}
-.btn.danger{color:var(--red-dark);border-color:#F09595;background:var(--red-light)}
-.btn.primary{background:var(--red);color:#fff;border-color:var(--red)}
+.btn{flex:1;font-size:14px;font-weight:500;padding:11px;border-radius:var(–radius-sm);cursor:pointer;border:.5px solid var(–border);background:var(–surface);color:var(–text)}
+.btn.danger{color:var(–red-dark);border-color:#F09595;background:var(–red-light)}
+.btn.primary{background:var(–red);color:#fff;border-color:var(–red)}
 .btn:active{opacity:.75;transform:scale(.98)}
 
 .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(–text-muted)}
 .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .chart-wrap{position:relative;height:200px}
 .chart-wrap-lg{position:relative;height:260px}
 
 .month-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-select{font-size:14px;padding:7px 10px;border-radius:var(--radius-sm);border:.5px solid var(--border);background:var(--surface);color:var(--text);flex:1;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236A6A6A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+select{font-size:14px;padding:7px 10px;border-radius:var(–radius-sm);border:.5px solid var(–border);background:var(–surface);color:var(–text);flex:1;-webkit-appearance:none;appearance:none;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘8’ viewBox=‘0 0 12 8’%3E%3Cpath d=‘M1 1l5 5 5-5’ stroke=’%236A6A6A’ stroke-width=‘1.5’ fill=‘none’ stroke-linecap=‘round’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 
-.hist-item{border-bottom:.5px solid var(--border);padding:12px 0}
+.hist-item{border-bottom:.5px solid var(–border);padding:12px 0}
 .hist-item:last-child{border-bottom:none}
 .badge{font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px}
-.badge.pos{background:var(--green-light);color:var(--green)}
-.badge.neg{background:var(--red-light);color:var(--red-dark)}
+.badge.pos{background:var(–green-light);color:var(–green)}
+.badge.neg{background:var(–red-light);color:var(–red-dark)}
 
 .progress-bar{height:6px;background:#f0f0f0;border-radius:3px;margin-top:4px}
 .progress-fill{height:100%;border-radius:3px}
 
-.flag-item{padding:10px 0;border-bottom:.5px solid var(--border)}
+.flag-item{padding:10px 0;border-bottom:.5px solid var(–border)}
 .flag-item:last-child{border-bottom:none}
 
-.note-input{width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius-sm);border:.5px solid var(--border);background:var(--bg);color:var(--text);resize:vertical;min-height:60px;margin-top:6px;font-family:inherit}
+.note-input{width:100%;font-size:13px;padding:8px 10px;border-radius:var(–radius-sm);border:.5px solid var(–border);background:var(–bg);color:var(–text);resize:vertical;min-height:60px;margin-top:6px;font-family:inherit}
 
-.loan-card{background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);padding:14px;margin-bottom:10px}
-.inline-edit{font-size:14px;padding:4px 8px;border-radius:6px;border:.5px solid var(--border);background:var(--bg);color:var(--text);width:100px}
+.loan-card{background:var(–surface);border-radius:var(–radius);border:.5px solid var(–border);padding:14px;margin-bottom:10px}
+.inline-edit{font-size:14px;padding:4px 8px;border-radius:6px;border:.5px solid var(–border);background:var(–bg);color:var(–text);width:100px}
 
 .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a1a;color:#fff;font-size:13px;font-weight:500;padding:10px 20px;border-radius:999px;opacity:0;transition:all .3s ease;pointer-events:none;white-space:nowrap;z-index:200}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-.divider{border:none;border-top:.5px solid var(--border);margin:10px 0}
+.divider{border:none;border-top:.5px solid var(–border);margin:10px 0}
 </style>
+
 </head>
 <body>
 
@@ -124,9 +126,9 @@ const SK={
 
 const DEFAULT_EXPENSES=['Loan payments','Groceries','EAC bill','Take-Out food','Water bill','Night out','Various'];
 const DEFAULT_LOANS=[
-  {name:'Housing 1',balance:32817,rate:4.3,installments:48,monthly:740},
-  {name:'Housing 2',balance:10632,rate:4.34,installments:58,monthly:218},
-  {name:'Car',balance:27302,rate:5.2,installments:70,monthly:444},
+  {name:'Loan 1',balance:0,rate:0,installments:0,monthly:0},
+  {name:'Loan 2',balance:0,rate:0,installments:0,monthly:0},
+  {name:'Loan 3',balance:0,rate:0,installments:0,monthly:0},
 ];
 const TARGETS={
   'Loan payments':1402,'Groceries':250,'EAC bill':110,
@@ -144,7 +146,7 @@ function save(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch{}
 
 let history=load(SK.history,[]);
 let loans=load(SK.loans,DEFAULT_LOANS);
-let settings=load(SK.settings,{normalIncome:4531,wifeIncome:800});
+let settings=load(SK.settings,{normalIncome:0,otherIncome:0,otherIncomeLabel:'Other income source'});
 let notes=load(SK.notes,{});
 let goals=load(SK.goals,{emergency:{target:9500,current:0},savings:{total:0},invested:{total:0}});
 
@@ -168,7 +170,7 @@ function render(){
   const totalExp=expenseData.reduce((s,r)=>s+r.amount,0);
   const over=totalIncome>0&&totalExp>totalIncome;
   document.getElementById('warning-banner').classList.toggle('show',over);
-  document.getElementById('header-sub').textContent=`${MONTHS[selMonth]} ${selYear} · Normal income ${fmt(settings.normalIncome+settings.wifeIncome)}/mo`;
+  document.getElementById('header-sub').textContent=`${MONTHS[selMonth]} ${selYear} · Normal income ${fmt(settings.normalIncome+(settings.otherIncome||0))}/mo`;
 
   // Tab bar
   const tb=document.getElementById('tab-bar');
@@ -332,7 +334,11 @@ function renderHistory(){
   <div style="margin-bottom:12px">
     <div class="section-label">Note for ${MONTHS[selMonth]} ${selYear}</div>
     <textarea class="note-input" id="month-note" placeholder="Add a note for this month...">${note}</textarea>
-    <button class="btn" style="margin-top:6px;flex:none;width:auto;padding:6px 14px;font-size:12px" onclick="saveNote()">Save note</button>
+
+```
+<button class="btn" style="margin-top:6px;flex:none;width:auto;padding:6px 14px;font-size:12px" onclick="saveNote()">Save note</button>
+```
+
   </div>
   <hr class="divider"/>
   <div class="section-label">Saved months</div>
@@ -361,48 +367,49 @@ function renderHistory(){
 }
 
 function saveNote(){
-  const key=selYear+'-'+String(selMonth).padStart(2,'0');
-  notes[key]=document.getElementById('month-note')?.value||'';
-  save(SK.notes,notes);toast('Note saved');renderHistory();
+const key=selYear+’-’+String(selMonth).padStart(2,‘0’);
+notes[key]=document.getElementById(‘month-note’)?.value||’’;
+save(SK.notes,notes);toast(‘Note saved’);renderHistory();
 }
 
 function renderPieChart(expenses){
-  const labels=expenses.map(r=>r.label||'Unnamed').filter((_,i)=>expenses[i].amount>0);
-  const amounts=expenses.filter(r=>r.amount>0).map(r=>r.amount);
-  const colors=labels.map((_,i)=>COLORS[i%COLORS.length]);
-  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-  makeChart('pieChart',{type:'pie',data:{labels,datasets:[{data:amounts,backgroundColor:colors,borderWidth:2,borderColor:isDark?'#2a2a2a':'#fff',hoverOffset:8}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.parsed)} (${((ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(0)}%)`}}}}});
-  const leg=document.getElementById('pie-legend');if(!leg)return;
-  const total=amounts.reduce((s,v)=>s+v,0);
-  leg.innerHTML=labels.map((l,i)=>`<span class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span>${l} ${total>0?((amounts[i]/total)*100).toFixed(0):0}%</span>`).join('');
+const labels=expenses.map(r=>r.label||‘Unnamed’).filter((*,i)=>expenses[i].amount>0);
+const amounts=expenses.filter(r=>r.amount>0).map(r=>r.amount);
+const colors=labels.map((*,i)=>COLORS[i%COLORS.length]);
+const isDark=matchMedia(’(prefers-color-scheme:dark)’).matches;
+makeChart(‘pieChart’,{type:‘pie’,data:{labels,datasets:[{data:amounts,backgroundColor:colors,borderWidth:2,borderColor:isDark?’#2a2a2a’:’#fff’,hoverOffset:8}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.parsed)} (${((ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(0)}%)`}}}}});
+const leg=document.getElementById(‘pie-legend’);if(!leg)return;
+const total=amounts.reduce((s,v)=>s+v,0);
+leg.innerHTML=labels.map((l,i)=>`<span class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span>${l} ${total>0?((amounts[i]/total)*100).toFixed(0):0}%</span>`).join(’’);
 }
 
 function renderBarChart(inc,exp){
-  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-  const tc=isDark?'#a0a0a0':'#6A6A6A',gc=isDark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';
-  makeChart('barChart',{type:'bar',data:{labels:['Income','Expenses'],datasets:[{data:[inc,exp],backgroundColor:['#0F6E56','#E60000'],borderWidth:0,borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.parsed.y)}}},
-      scales:{y:{beginAtZero:true,ticks:{color:tc,callback:v=>'€'+v.toLocaleString('de-DE')},grid:{color:gc}},x:{ticks:{color:tc},grid:{display:false}}}}});
+const isDark=matchMedia(’(prefers-color-scheme:dark)’).matches;
+const tc=isDark?’#a0a0a0’:’#6A6A6A’,gc=isDark?‘rgba(255,255,255,.07)’:‘rgba(0,0,0,.07)’;
+makeChart(‘barChart’,{type:‘bar’,data:{labels:[‘Income’,‘Expenses’],datasets:[{data:[inc,exp],backgroundColor:[’#0F6E56’,’#E60000’],borderWidth:0,borderRadius:4}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>’ ’+fmt(ctx.parsed.y)}}},
+scales:{y:{beginAtZero:true,ticks:{color:tc,callback:v=>‘€’+v.toLocaleString(‘de-DE’)},grid:{color:gc}},x:{ticks:{color:tc},grid:{display:false}}}}});
 }
 
 function renderCatChart(expenses,over){
-  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-  const tc=isDark?'#a0a0a0':'#6A6A6A',gc=isDark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';
-  makeChart('catChart',{type:'bar',data:{labels:expenses.map(r=>r.label||'Unnamed'),datasets:[{data:expenses.map(r=>r.amount),backgroundColor:expenses.map((r,i)=>over&&r.amount>0?'#E60000':COLORS[i%COLORS.length]),borderWidth:0,borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.parsed.x)}}},
-      scales:{x:{beginAtZero:true,ticks:{color:tc,callback:v=>'€'+v.toLocaleString('de-DE')},grid:{color:gc}},y:{ticks:{color:tc,font:{size:11}},grid:{display:false}}}}});
+const isDark=matchMedia(’(prefers-color-scheme:dark)’).matches;
+const tc=isDark?’#a0a0a0’:’#6A6A6A’,gc=isDark?‘rgba(255,255,255,.07)’:‘rgba(0,0,0,.07)’;
+makeChart(‘catChart’,{type:‘bar’,data:{labels:expenses.map(r=>r.label||‘Unnamed’),datasets:[{data:expenses.map(r=>r.amount),backgroundColor:expenses.map((r,i)=>over&&r.amount>0?’#E60000’:COLORS[i%COLORS.length]),borderWidth:0,borderRadius:4}]},
+options:{responsive:true,maintainAspectRatio:false,indexAxis:‘y’,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>’ ’+fmt(ctx.parsed.x)}}},
+scales:{x:{beginAtZero:true,ticks:{color:tc,callback:v=>‘€’+v.toLocaleString(‘de-DE’)},grid:{color:gc}},y:{ticks:{color:tc,font:{size:11}},grid:{display:false}}}}});
 }
 
 // ── ADVISOR TAB ────────────────────────────────────────────────────────────
 function renderAdvisor(c){
-  const normalIncome=settings.normalIncome+settings.wifeIncome;
-  const lastMonth=history[0];
-  const avgExp=history.length?Math.round(history.reduce((s,h)=>s+h.expenses,0)/history.length):0;
-  const normalBalance=normalIncome-avgExp;
-  const totalDebt=loans.reduce((s,l)=>s+l.balance,0);
+const normalIncome=settings.normalIncome+(settings.otherIncome||0);
+const lastMonth=history[0];
+const avgExp=history.length?Math.round(history.reduce((s,h)=>s+h.expenses,0)/history.length):0;
+const normalBalance=normalIncome-avgExp;
+const totalDebt=loans.reduce((s,l)=>s+l.balance,0);
 
-  c.innerHTML=`
+c.innerHTML=`
+
   <div class="section-label">Monthly income settings</div>
   <div class="card">
     <div class="input-row">
@@ -410,8 +417,8 @@ function renderAdvisor(c){
       <input type="number" id="set-salary" value="${settings.normalIncome}" oninput="updateSetting('normalIncome',this.value)" style="width:110px"/>
     </div>
     <div class="input-row">
-      <input type="text" value="Wife income" style="flex:1;font-size:13px" readonly/>
-      <input type="number" id="set-wife" value="${settings.wifeIncome}" oninput="updateSetting('wifeIncome',this.value)" style="width:110px"/>
+      <input type="text" id="other-label" placeholder="Other income label" value="${settings.otherIncomeLabel||'Other income source'}" oninput="updateSetting('otherIncomeLabel',this.value)" style="flex:1;font-size:13px"/>
+      <input type="number" id="set-other" value="${settings.otherIncome||0}" oninput="updateSetting('otherIncome',this.value)" style="width:110px"/>
     </div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Normal monthly total: <strong>${fmt(normalIncome)}</strong></div>
   </div>
@@ -444,26 +451,27 @@ function renderAdvisor(c){
     <div class="chart-wrap"><canvas id="projChart"></canvas></div>
   </div>`;
 
-  // Projection chart
-  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-  const tc=isDark?'#a0a0a0':'#6A6A6A';
-  const projData=Array.from({length:12},(_,i)=>({
-    month:['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'][i],
-    savings:250*(i+1),
-    invested:Math.round(250*12*(((1.005**(i+1))-1)/0.005)),
-  }));
-  makeChart('projChart',{type:'line',data:{labels:projData.map(d=>d.month),datasets:[
-    {label:'Savings',data:projData.map(d=>d.savings),borderColor:'#0F6E56',tension:.4,fill:false,pointRadius:2},
-    {label:'Invested',data:projData.map(d=>d.invested),borderColor:'#185FA5',tension:.4,fill:false,pointRadius:2},
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:11}}}},scales:{y:{ticks:{color:tc,callback:v=>'€'+v},grid:{color:isDark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)'}},x:{ticks:{color:tc},grid:{display:false}}}}});
+// Projection chart
+const isDark=matchMedia(’(prefers-color-scheme:dark)’).matches;
+const tc=isDark?’#a0a0a0’:’#6A6A6A’;
+const projData=Array.from({length:12},(_,i)=>({
+month:[‘Apr’,‘May’,‘Jun’,‘Jul’,‘Aug’,‘Sep’,‘Oct’,‘Nov’,‘Dec’,‘Jan’,‘Feb’,‘Mar’][i],
+savings:250*(i+1),
+invested:Math.round(250*12*(((1.005**(i+1))-1)/0.005)),
+}));
+makeChart(‘projChart’,{type:‘line’,data:{labels:projData.map(d=>d.month),datasets:[
+{label:‘Savings’,data:projData.map(d=>d.savings),borderColor:’#0F6E56’,tension:.4,fill:false,pointRadius:2},
+{label:‘Invested’,data:projData.map(d=>d.invested),borderColor:’#185FA5’,tension:.4,fill:false,pointRadius:2},
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:11}}}},scales:{y:{ticks:{color:tc,callback:v=>‘€’+v},grid:{color:isDark?‘rgba(255,255,255,.07)’:‘rgba(0,0,0,.07)’}},x:{ticks:{color:tc},grid:{display:false}}}}});
 }
 
 function updateSetting(key,val){settings[key]=parseFloat(val)||0;save(SK.settings,settings)}
 
 // ── LOANS TAB ──────────────────────────────────────────────────────────────
 function renderLoans(c){
-  const totalDebt=loans.reduce((s,l)=>s+l.balance,0);
-  c.innerHTML=`
+const totalDebt=loans.reduce((s,l)=>s+l.balance,0);
+c.innerHTML=`
+
   <div class="section-label">Your loans</div>
   ${loans.map((l,i)=>{
     const mi=(l.balance*(l.rate/100))/12;
@@ -475,8 +483,8 @@ function renderLoans(c){
       </div>
       <div class="grid2" style="margin-bottom:8px">
         <div style="background:var(--gray-light);border-radius:6px;padding:8px">
-          <div style="font-size:10px;color:var(--text-muted)">Outstanding</div>
-          <div style="font-size:14px;font-weight:700">${fmt(l.balance)}</div>
+          <div style="font-size:10px;color:var(--text-muted)">Outstanding (€)</div>
+          <input class="inline-edit" type="number" value="${l.balance}" oninput="updateLoan(${i},'balance',this.value)"/>
         </div>
         <div style="background:var(--gray-light);border-radius:6px;padding:8px">
           <div style="font-size:10px;color:var(--text-muted)">Monthly est.</div>
@@ -491,31 +499,35 @@ function renderLoans(c){
           <input class="inline-edit" type="number" value="${l.balance}" oninput="updateLoan(${i},'balance',this.value)"/>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted)">Monthly interest: <strong style="color:var(--red-dark)">${fmt(mi)}</strong> · Total remaining: <strong>${fmt(l.monthly*l.installments)}</strong></div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${l.rate>=5?'#E60000':'#A32D2D'}"></div></div>
+        <div style="background:var(--gray-light);border-radius:6px;padding:8px">
+          <div style="font-size:10px;color:var(--text-muted)">Interest rate (%)</div>
+          <input class="inline-edit" type="number" step="0.01" value="${l.rate}" oninput="updateLoan(${i},'rate',this.value)"/>
+        </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Monthly interest: <strong style="color:var(--red-dark)">${fmt(mi)}</strong> · Total remaining: <strong>${fmt(l.monthly*l.installments)}</strong></div><div class="progress-fill" style="width:${pct}%;background:${l.rate>=5?'#E60000':'#A32D2D'}"></div></div>
       <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${pct}% of total debt</div>
-      ${l.rate>=5?`<div style="margin-top:8px;background:var(--red-light);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--red-dark)">⚠️ Highest rate — overpay €100/month to save ~€800 in interest</div>`:''}
+      <div class="progress-bar">
     </div>`}).join('')}
   <div class="card">
     <div class="section-label" style="margin-bottom:8px">Debt breakdown</div>
     <div class="chart-wrap"><canvas id="debtChart"></canvas></div>
   </div>`;
 
-  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-  makeChart('debtChart',{type:'doughnut',data:{labels:loans.map(l=>l.name),datasets:[{data:loans.map(l=>l.balance),backgroundColor:['#E60000','#A32D2D','#6A6A6A'],borderWidth:2,borderColor:isDark?'#2a2a2a':'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{labels:{color:isDark?'#f0f0f0':'#1a1a1a',font:{size:11}}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.parsed)}`}}}}});
+const isDark=matchMedia(’(prefers-color-scheme:dark)’).matches;
+makeChart(‘debtChart’,{type:‘doughnut’,data:{labels:loans.map(l=>l.name),datasets:[{data:loans.map(l=>l.balance),backgroundColor:[’#E60000’,’#A32D2D’,’#6A6A6A’],borderWidth:2,borderColor:isDark?’#2a2a2a’:’#fff’}]},
+options:{responsive:true,maintainAspectRatio:false,cutout:‘60%’,plugins:{legend:{labels:{color:isDark?’#f0f0f0’:’#1a1a1a’,font:{size:11}}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmt(ctx.parsed)}`}}}}});
 }
 
 function updateLoan(i,field,val){loans[i][field]=parseFloat(val)||0;save(SK.loans,loans)}
 
 // ── ANALYSIS TAB ───────────────────────────────────────────────────────────
 function renderAnalysis(c){
-  if(!history.length){c.innerHTML='<div class="card" style="text-align:center;padding:24px;color:var(--text-muted)">No data yet. Save a month in the Budget tab first.</div>';return}
+if(!history.length){c.innerHTML=’<div class="card" style="text-align:center;padding:24px;color:var(--text-muted)">No data yet. Save a month in the Budget tab first.</div>’;return}
 
-  const last=history[0];
-  const allCats=[...new Set(history.flatMap(h=>h.expenseRows?.map(r=>r.label)||[]))];
+const last=history[0];
+const allCats=[…new Set(history.flatMap(h=>h.expenseRows?.map(r=>r.label)||[]))];
 
-  c.innerHTML=`
+c.innerHTML=`
+
   <div class="section-label">Latest month vs targets</div>
   <div class="card">
     ${Object.entries(TARGETS).map(([cat,target])=>{
@@ -552,39 +564,38 @@ function renderAnalysis(c){
       </div>`;}).join('')}
   </div>`;
 
-  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-  const tc=isDark?'#a0a0a0':'#6A6A6A',gc=isDark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';
-  const rev=[...history].reverse();
-  makeChart('histChart',{type:'bar',data:{labels:rev.map(h=>h.month.slice(0,3)+' '+h.year),datasets:[
-    {label:'Income',data:rev.map(h=>h.income),backgroundColor:'#0F6E56',borderRadius:4},
-    {label:'Expenses',data:rev.map(h=>h.expenses),backgroundColor:'#E60000',borderRadius:4},
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{color:tc,callback:v=>'€'+v.toLocaleString('de-DE')},grid:{color:gc}},x:{ticks:{color:tc,font:{size:10}},grid:{display:false}}}}});
+const isDark=matchMedia(’(prefers-color-scheme:dark)’).matches;
+const tc=isDark?’#a0a0a0’:’#6A6A6A’,gc=isDark?‘rgba(255,255,255,.07)’:‘rgba(0,0,0,.07)’;
+const rev=[…history].reverse();
+makeChart(‘histChart’,{type:‘bar’,data:{labels:rev.map(h=>h.month.slice(0,3)+’ ‘+h.year),datasets:[
+{label:‘Income’,data:rev.map(h=>h.income),backgroundColor:’#0F6E56’,borderRadius:4},
+{label:‘Expenses’,data:rev.map(h=>h.expenses),backgroundColor:’#E60000’,borderRadius:4},
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{color:tc,callback:v=>‘€’+v.toLocaleString(‘de-DE’)},grid:{color:gc}},x:{ticks:{color:tc,font:{size:10}},grid:{display:false}}}}});
 }
 
 // ── ACTION PLAN TAB ────────────────────────────────────────────────────────
 function renderActionPlan(c){
-  const normalIncome=settings.normalIncome+settings.wifeIncome;
-  const last=history[0];
-  const diningSpend=last?(last.expenseRows?.filter(r=>r.label==='Night out'||r.label==='Take-Out food').reduce((s,r)=>s+r.amount,0)||0):0;
-  const diningTarget=330;
-  const diningOver=diningSpend>diningTarget;
+const normalIncome=settings.normalIncome+settings.wifeIncome;
+const last=history[0];
+const diningSpend=last?(last.expenseRows?.filter(r=>r.label===‘Night out’||r.label===‘Take-Out food’).reduce((s,r)=>s+r.amount,0)||0):0;
+const diningTarget=330;
+const diningOver=diningSpend>diningTarget;
 
-  c.innerHTML=`
-  ${last?`<div class="card" style="background:var(--red-light);border:.5px solid var(--red)">
-    <div style="font-size:13px;font-weight:700;color:var(--red-dark);margin-bottom:6px">📊 ${last.month} ${last.year} Summary</div>
-    <div style="font-size:13px">Income: <strong style="color:var(--green)">${fmt(last.income)}</strong> · Expenses: <strong style="color:var(--red-dark)">${fmt(last.expenses)}</strong> · Net: <strong style="color:${last.balance>=0?'var(--green)':'var(--red-dark)'}">${fmt(last.balance)}</strong></div>
-    ${diningOver?`<div style="font-size:12px;color:var(--red-dark);margin-top:6px">⚠️ Dining & delivery: ${fmt(diningSpend)} vs target ${fmt(diningTarget)} — over by ${fmt(diningSpend-diningTarget)}</div>`:''}
+c.innerHTML=` ${last?`<div class="card" style="background:var(--red-light);border:.5px solid var(--red)">
+<div style="font-size:13px;font-weight:700;color:var(--red-dark);margin-bottom:6px">📊 ${last.month} ${last.year} Summary</div>
+<div style="font-size:13px">Income: <strong style="color:var(--green)">${fmt(last.income)}</strong> · Expenses: <strong style="color:var(--red-dark)">${fmt(last.expenses)}</strong> · Net: <strong style="color:${last.balance>=0?'var(--green)':'var(--red-dark)'}">${fmt(last.balance)}</strong></div>
+${diningOver?`<div style="font-size:12px;color:var(--red-dark);margin-top:6px">⚠️ Dining & delivery: ${fmt(diningSpend)} vs target ${fmt(diningTarget)} — over by ${fmt(diningSpend-diningTarget)}</div>`:’’}
+
   </div>`:''}
 
-  ${[
-    {t:'🔴 Priority 1 — Attack car loan',steps:['Balance €27,302 at 5.2% — your most expensive debt','Overpay €100/month → saves ~€800 total interest','Set up standing order on 20th of each month']},
-    {t:'🟠 Priority 2 — Emergency fund',steps:['Target: 3 months expenses = €9,500','Add €150/month → keep in high-yield savings or MMF','Do not invest this — it must be instantly accessible']},
-    {t:'🟢 Priority 3 — Invest €250/month',steps:['Set up monthly recurring in Interactive Brokers','Buy VWCE €150 + CSPX €75 + MMF €25 on the 20th','Do not touch for 10+ years — let compound growth work']},
-    {t:'🔵 Priority 4 — Save €250/month',steps:['Separate savings account — auto-transfer on salary day (19th)','Label it "Goals" — use for holidays, car costs, one-offs','After emergency fund is full, redirect €150 here']},
-    {t:'✂️ Key lever — Cut dining & delivery',steps:['March: €841 on restaurants+delivery combined','Target: €330 combined saving €511/month = €6,132/year','This single change funds ALL your financial goals']},
-  ].map(s=>`<div class="card" style="margin-bottom:8px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:8px">${s.t}</div>
-    ${s.steps.map(st=>`<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;padding-left:10px;border-left:2px solid var(--red)">→ ${st}</div>`).join('')}
+${[
+{t:‘🔴 Priority 1 — Attack car loan’,steps:[‘Balance €27,302 at 5.2% — your most expensive debt’,‘Overpay €100/month → saves ~€800 total interest’,‘Set up standing order on 20th of each month’]},
+{t:‘🟠 Priority 2 — Emergency fund’,steps:[‘Target: 3 months expenses = €9,500’,‘Add €150/month → keep in high-yield savings or MMF’,‘Do not invest this — it must be instantly accessible’]},
+{t:‘🟢 Priority 3 — Invest €250/month’,steps:[‘Set up monthly recurring in Interactive Brokers’,‘Buy VWCE €150 + CSPX €75 + MMF €25 on the 20th’,‘Do not touch for 10+ years — let compound growth work’]},
+{t:‘🔵 Priority 4 — Save €250/month’,steps:[‘Separate savings account — auto-transfer on salary day (19th)’,‘Label it “Goals” — use for holidays, car costs, one-offs’,‘After emergency fund is full, redirect €150 here’]},
+{t:‘✂️ Key lever — Cut dining & delivery’,steps:[‘March: €841 on restaurants+delivery combined’,‘Target: €330 combined saving €511/month = €6,132/year’,‘This single change funds ALL your financial goals’]},
+].map(s=>`<div class="card" style="margin-bottom:8px"> <div style="font-weight:700;font-size:14px;margin-bottom:8px">${s.t}</div> ${s.steps.map(st=>`<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;padding-left:10px;border-left:2px solid var(--red)">→ ${st}</div>`).join(’’)}
+
   </div>`).join('')}
 
   <div class="section-label">Add a note</div>
@@ -594,11 +605,12 @@ function renderActionPlan(c){
   </div>`;
 }
 
-function saveActionNote(){notes['action']=document.getElementById('action-note')?.value||'';save(SK.notes,notes);toast('Note saved')}
+function saveActionNote(){notes[‘action’]=document.getElementById(‘action-note’)?.value||’’;save(SK.notes,notes);toast(‘Note saved’)}
 
 // ── INVESTMENTS TAB ────────────────────────────────────────────────────────
 function renderInvestments(c){
-  c.innerHTML=`
+c.innerHTML=`
+
   <div class="section-label">Recommended allocation — €250/month via IB</div>
   ${INVEST_PLAN.map(r=>`<div class="card" style="display:flex;align-items:center;gap:12px;padding:12px">
     <div style="width:44px;height:44px;border-radius:8px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;text-align:center;flex-shrink:0">${r.ticker}</div>
@@ -625,23 +637,24 @@ function renderInvestments(c){
     <button class="btn primary" style="margin-top:8px;flex:none;width:auto;padding:8px 16px;font-size:13px" onclick="saveInvestNote()">Save note</button>
   </div>`;
 
-  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
-  const tc=isDark?'#a0a0a0':'#6A6A6A';
-  const growthData=Array.from({length:10},(_,i)=>({
-    year:'Y'+(i+1),
-    value:Math.round(250*12*(((1.07**(i+1))-1)/0.07)),
-    contributions:250*12*(i+1)
-  }));
-  makeChart('growthChart',{type:'line',data:{labels:growthData.map(d=>d.year),datasets:[
-    {label:'Portfolio value',data:growthData.map(d=>d.value),borderColor:'#0F6E56',backgroundColor:'rgba(15,110,86,0.1)',fill:true,tension:.4,pointRadius:3},
-    {label:'Contributions',data:growthData.map(d=>d.contributions),borderColor:'#6A6A6A',borderDash:[5,5],fill:false,tension:.4,pointRadius:0},
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:11}}}},scales:{y:{ticks:{color:tc,callback:v=>'€'+(v/1000).toFixed(0)+'k'},grid:{color:isDark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)'}},x:{ticks:{color:tc},grid:{display:false}}}}});
+const isDark=matchMedia(’(prefers-color-scheme:dark)’).matches;
+const tc=isDark?’#a0a0a0’:’#6A6A6A’;
+const growthData=Array.from({length:10},(_,i)=>({
+year:‘Y’+(i+1),
+value:Math.round(250*12*(((1.07**(i+1))-1)/0.07)),
+contributions:250*12*(i+1)
+}));
+makeChart(‘growthChart’,{type:‘line’,data:{labels:growthData.map(d=>d.year),datasets:[
+{label:‘Portfolio value’,data:growthData.map(d=>d.value),borderColor:’#0F6E56’,backgroundColor:‘rgba(15,110,86,0.1)’,fill:true,tension:.4,pointRadius:3},
+{label:‘Contributions’,data:growthData.map(d=>d.contributions),borderColor:’#6A6A6A’,borderDash:[5,5],fill:false,tension:.4,pointRadius:0},
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:11}}}},scales:{y:{ticks:{color:tc,callback:v=>‘€’+(v/1000).toFixed(0)+‘k’},grid:{color:isDark?‘rgba(255,255,255,.07)’:‘rgba(0,0,0,.07)’}},x:{ticks:{color:tc},grid:{display:false}}}}});
 }
 
-function saveInvestNote(){notes['invest']=document.getElementById('invest-note')?.value||'';save(SK.notes,notes);toast('Note saved')}
+function saveInvestNote(){notes[‘invest’]=document.getElementById(‘invest-note’)?.value||’’;save(SK.notes,notes);toast(‘Note saved’)}
 
 // ── BOOT ───────────────────────────────────────────────────────────────────
-window.addEventListener('load',()=>render());
+window.addEventListener(‘load’,()=>render());
 </script>
+
 </body>
 </html>
