@@ -147,14 +147,33 @@ function migrate(){
 }
 
 var finHistory,loans,cfg,notes;
-function loadState(){migrate();finHistory=lsGet(SK.h,[]);loans=lsGet(SK.l,DEFLOAN);cfg=lsGet(SK.s,{sal:0,other:0,otherLbl:'Other income'});notes=lsGet(SK.n,{});}
+// Default income sources — used to pre-populate Budget tab for new months
+var DEFINC=['Salary','Other income'];
+
+function loadState(){
+  migrate();
+  finHistory=lsGet(SK.h,[]);
+  loans=lsGet(SK.l,DEFLOAN);
+  cfg=lsGet(SK.s,{incSources:[{lbl:'Salary',amt:0},{lbl:'Other income',amt:0}]});
+  // Migrate old cfg format (sal/other fields) to new incSources array
+  if(!cfg.incSources){
+    cfg.incSources=[
+      {lbl:'Salary',amt:cfg.sal||0},
+      {lbl:cfg.otherLbl||'Other income',amt:cfg.other||0}
+    ];
+    delete cfg.sal;delete cfg.other;delete cfg.otherLbl;
+    lsSet(SK.s,cfg);
+  }
+  notes=lsGet(SK.n,{});
+}
 
 var incRows=[],expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
 var curTab='Budget',ch={},debT=null,loanDebT=null;
 var now=new Date(),selM=now.getMonth(),selY=now.getFullYear();
 var investView='10';
 
-function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Total baseline income from Advisor sources
+function totalBaseIncome(){return(cfg.incSources||[]).reduce(function(s,r){return s+(parseFloat(r.amt)||0);},0);}return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function fmtE(n){return EUR+Math.round(n).toLocaleString('de-DE');}
 function sumAmt(arr){return arr.reduce(function(s,r){return s+(parseFloat(r.amt)||0);},0);}
 function isDark(){return matchMedia('(prefers-color-scheme:dark)').matches;}
@@ -210,7 +229,7 @@ function storageInfo(){
 function render(){
   var ti=sumAmt(incRows),te=sumAmt(expRows),over=ti>0&&te>ti;
   var wb=document.getElementById('wb');if(wb)wb.className='warn'+(over?' on':'');
-  var ni=cfg.sal+(cfg.other||0);
+  var ni=totalBaseIncome();
   var hs=document.getElementById('hsub');if(hs)hs.textContent=MO[selM]+' '+selY+' | Base income '+fmtE(ni)+'/mo';
   document.getElementById('tabbar').innerHTML=TABS.map(function(t){return'<button class="tab'+(t===curTab?' on':'')+'" onclick="go(\''+t+'\')">'+t+'</button>';}).join('');
   var root=document.getElementById('root');root.innerHTML='';
@@ -289,12 +308,23 @@ function chgM(){
   selM=parseInt(msEl.value,10);selY=parseInt(ysEl.value,10);
   var key=selY+'-'+pad2(selM),saved=null;
   for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===key){saved=finHistory[i];break;}}
-  if(saved){incRows=JSON.parse(JSON.stringify(saved.ir));expRows=JSON.parse(JSON.stringify(saved.er));toast(saved.mo+' '+saved.yr+' loaded');}
-  else{incRows=[];expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});}
+  if(saved){
+    incRows=JSON.parse(JSON.stringify(saved.ir));
+    expRows=JSON.parse(JSON.stringify(saved.er));
+    toast(saved.mo+' '+saved.yr+' loaded');
+  } else {
+    // Pre-populate income from Advisor baseline for new months
+    incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
+    expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
+  }
   render();
 }
 
-function clrCur(){incRows=[];expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});render();toast('Cleared');}
+function clrCur(){
+  incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
+  expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
+  render();toast('Cleared — income restored from Advisor');
+}
 
 function saveMo(){
   var ti=sumAmt(incRows),te=sumAmt(expRows);
@@ -377,17 +407,33 @@ function drawCat(over){
 }
 
 function rAdvisor(root){
-  var ni=cfg.sal+(cfg.other||0),hasH=finHistory.length>0;
+  var ni=totalBaseIncome(),hasH=finHistory.length>0;
   var avgExp=hasH?Math.round(finHistory.reduce(function(s,h){return s+h.expenses;},0)/finHistory.length):0;
   var td=loans.reduce(function(s,l){return s+(l.balance||0);},0);
   var nb=hasH?ni-avgExp:null,efTarget=hasH?avgExp*3:0;
   var topLoan=loans.reduce(function(a,b){return(a.rate||0)>=(b.rate||0)?a:b;});
   var planCost=750,feasible=nb!==null?nb>=planCost:null;
+  var sources=cfg.incSources||[];
+
+  var srcHtml='';
+  sources.forEach(function(src,i){
+    srcHtml+='<div class="irow">'
+      +'<input type="text" placeholder="Source name" value="'+esc(src.lbl)+'" oninput="updIncSrc('+i+',\'lbl\',this.value)" style="flex:1;font-size:14px"/>'
+      +'<input type="number" placeholder="0" min="0" inputmode="decimal" value="'+(src.amt||'')+'" '
+      +'onfocus="if(parseFloat(this.value)===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=\'0\'" '
+      +'oninput="updIncSrc('+i+',\'amt\',this.value)" style="width:108px"/>'
+      +'<button class="xbtn" onclick="remIncSrc('+i+')" aria-label="Remove">\u2715</button>'
+      +'</div>';
+  });
+
   root.innerHTML=
-    '<div class="lbl">Income settings</div><div class="card">'
-    +'<div class="irow"><input type="text" value="Your salary" style="flex:1;font-size:13px" readonly/><input type="number" value="'+(cfg.sal||0)+'" min="0" oninput="updCfg(\'sal\',this.value)" style="width:108px"/></div>'
-    +'<div class="irow"><input type="text" value="'+esc(cfg.otherLbl||'Other income')+'" oninput="updCfgLbl(this.value)" style="flex:1;font-size:13px"/><input type="number" value="'+(cfg.other||0)+'" min="0" oninput="updCfg(\'other\',this.value)" style="width:108px"/></div>'
-    +'<div style="font-size:12px;color:var(--tm);margin-top:4px" id="adv-total">Total: <strong>'+fmtE(ni)+'</strong></div></div>'
+    '<div class="notice" style="font-size:12px">Income sources entered here automatically pre-fill the Budget tab each month. Edit in Budget only if that month differs from your baseline.</div>'
+    +'<div class="lbl">Income sources (master)</div>'
+    +'<div class="card">'
+    +srcHtml
+    +'<button class="addbtn" onclick="addIncSrc()">+ Add income source</button>'
+    +'<div style="font-size:12px;color:var(--tm);margin-top:8px" id="adv-total">Total baseline: <strong>'+fmtE(ni)+'</strong></div>'
+    +'</div>'
     +'<div class="g2" id="adv-mets">'+met('Baseline income','pos',fmtE(ni))+met('Avg expenses',hasH?'neg':'',hasH?fmtE(avgExp):'Save a month first')+met('Avg net',nb!==null?(nb>=0?'pos':'neg'):'',nb!==null?fmtE(nb):'--')+met('Total debt','neg',fmtE(td))+'</div>'
     +'<div id="adv-eft">'+(hasH&&efTarget>0?'<div class="disc">Emergency fund target: <strong>'+fmtE(efTarget)+'</strong> (3 months of avg '+fmtE(avgExp)+' expenses)</div>':'')+'</div>'
     +'<div id="adv-feas">'+(feasible===false?'<div class="alert">Net balance ('+fmtE(nb)+') is below plan cost ('+fmtE(planCost)+'). Prioritise items 1 and 2 first.</div>':'')+(feasible===true?'<div class="notice">Your average net balance supports the full plan. Execute all 4 steps.</div>':'')+'</div>'
@@ -398,6 +444,7 @@ function rAdvisor(root){
       {p:4,l:'Savings goal',m:250,col:'#6A6A6A',n:'Auto-transfer on salary day. Separate labelled account.'}
     ].map(function(p){return'<div class="card" style="padding:12px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:50%;background:'+p.col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">'+p.p+'</div><div><div style="font-size:13px;font-weight:600">'+p.l+' <span style="color:'+p.col+'">'+fmtE(p.m)+'/mo</span></div><div style="font-size:11px;color:var(--tm)">'+p.n+'</div></div></div></div>';}).join('')
     +'<div class="lbl">12-month projection</div><div class="card"><div class="cw"><canvas id="projC" role="img" aria-label="12 month projection"></canvas></div></div>';
+
   var pd=Array.from({length:12},function(_,i){var n=i+1;return{m:['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'][i],s:250*n,v:Math.round(250*(Math.pow(1.005,n)-1)/0.005)};});
   mkChart('projC',{type:'line',data:{labels:pd.map(function(d){return d.m;}),datasets:[{label:'Saved (0%)',data:pd.map(function(d){return d.s;}),borderColor:'#6A6A6A',tension:.4,fill:false,pointRadius:2},{label:'Invested (6%)',data:pd.map(function(d){return d.v;}),borderColor:'#0F6E56',tension:.4,fill:false,pointRadius:2}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc(),font:{size:11}}}},scales:{y:{ticks:{color:tc(),callback:function(v){return EUR+v;}},grid:{color:gc()}},x:{ticks:{color:tc()},grid:{display:false}}}}});
