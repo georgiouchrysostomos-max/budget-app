@@ -450,43 +450,34 @@ function rAdvisor(root){
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc(),font:{size:11}}}},scales:{y:{ticks:{color:tc(),callback:function(v){return EUR+v;}},grid:{color:gc()}},x:{ticks:{color:tc()},grid:{display:false}}}}});
 }
 
-function updCfg(k,v){
-  cfg[k]=Math.max(0,parseFloat(v)||0);
+function addIncSrc(){
+  cfg.incSources.push({lbl:'',amt:0});
+  lsSet(SK.s,cfg);go('Advisor');
+}
+function remIncSrc(i){
+  cfg.incSources.splice(i,1);
+  lsSet(SK.s,cfg);go('Advisor');
+}
+function updIncSrc(i,field,v){
+  if(field==='amt') cfg.incSources[i].amt=Math.max(0,parseFloat(v)||0);
+  else cfg.incSources[i].lbl=v;
   lsSet(SK.s,cfg);
-  // Live update all derived displays without full re-render
-  var ni=cfg.sal+(cfg.other||0);
-  var el=document.querySelector('[data-ni]');
-  if(el)el.textContent=fmtE(ni);
-  var hs=document.getElementById('hsub');
-  if(hs)hs.textContent=MO[selM]+' '+selY+' | Base income '+fmtE(ni)+'/mo';
-  // Recalculate avg net and feasibility
+  // Live update totals
+  var ni=totalBaseIncome();
+  var hs=document.getElementById('hsub');if(hs)hs.textContent=MO[selM]+' '+selY+' | Base income '+fmtE(ni)+'/mo';
+  var tot=document.getElementById('adv-total');if(tot)tot.innerHTML='Total baseline: <strong>'+fmtE(ni)+'</strong>';
   var hasH=finHistory.length>0;
   var avgExp=hasH?Math.round(finHistory.reduce(function(s,h){return s+h.expenses;},0)/finHistory.length):0;
   var nb=hasH?ni-avgExp:null;
   var efTarget=hasH?avgExp*3:0;
   var planCost=750,feasible=nb!==null?nb>=planCost:null;
-  // Update metric cards
   var g=document.getElementById('adv-mets');
-  if(g)g.innerHTML=
-    met('Baseline income','pos',fmtE(ni))
-    +met('Avg expenses',hasH?'neg':'',hasH?fmtE(avgExp):'Save a month first')
-    +met('Avg net',nb!==null?(nb>=0?'pos':'neg'):'',nb!==null?fmtE(nb):'--')
-    +met('Total debt','neg',fmtE(loans.reduce(function(s,l){return s+(l.balance||0);},0)));
-  // Update feasibility banner
+  if(g)g.innerHTML=met('Baseline income','pos',fmtE(ni))+met('Avg expenses',hasH?'neg':'',hasH?fmtE(avgExp):'Save a month first')+met('Avg net',nb!==null?(nb>=0?'pos':'neg'):'',nb!==null?fmtE(nb):'--')+met('Total debt','neg',fmtE(loans.reduce(function(s,l){return s+(l.balance||0);},0)));
   var fb=document.getElementById('adv-feas');
-  if(fb){
-    if(feasible===false)fb.innerHTML='<div class="alert">Net balance ('+fmtE(nb)+') is below plan cost ('+fmtE(planCost)+'). Prioritise items 1 and 2 first.</div>';
-    else if(feasible===true)fb.innerHTML='<div class="notice">Your average net balance supports the full plan. Execute all 4 steps.</div>';
-    else fb.innerHTML='';
-  }
-  // Update total display
-  var tot=document.getElementById('adv-total');
-  if(tot)tot.innerHTML='Total: <strong>'+fmtE(ni)+'</strong>';
-  // Update emergency fund target
+  if(fb){if(feasible===false)fb.innerHTML='<div class="alert">Net balance ('+fmtE(nb)+') is below plan cost ('+fmtE(planCost)+'). Prioritise items 1 and 2 first.</div>';else if(feasible===true)fb.innerHTML='<div class="notice">Your average net balance supports the full plan. Execute all 4 steps.</div>';else fb.innerHTML='';}
   var eft=document.getElementById('adv-eft');
-  if(eft&&hasH&&efTarget>0)eft.innerHTML='<div class="disc">Emergency fund target: <strong>'+fmtE(efTarget)+'</strong> (3 months of avg '+fmtE(avgExp)+' expenses)</div>';
+  if(eft)eft.innerHTML=hasH&&efTarget>0?'<div class="disc">Emergency fund target: <strong>'+fmtE(efTarget)+'</strong> (3 months of avg '+fmtE(avgExp)+' expenses)</div>':'';
 }
-function updCfgLbl(v){cfg.otherLbl=v;lsSet(SK.s,cfg);}
 
 function rLoans(root){
   var td=loans.reduce(function(s,l){return s+(l.balance||0);},0);
@@ -657,7 +648,23 @@ function resetAll(){
   curTab='Budget';render();toast('All data reset');
 }
 
-function boot(){loadState();render();}
+function boot(){
+  try{
+    loadState();
+    render();
+  } catch(e){
+    // If anything crashes on load, wipe cfg only and retry
+    try{
+      localStorage.removeItem(SK.s);
+      loadState();
+      render();
+      toast('Settings reset due to error');
+    } catch(e2){
+      document.getElementById('hsub').textContent='Error — please reload';
+      document.getElementById('root').innerHTML='<div style="padding:20px;font-size:14px;color:#A32D2D">App error: '+e2.message+'<br/><br/><button onclick="location.reload()" style="padding:10px 20px;background:#E60000;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Reload</button></div>';
+    }
+  }
+}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',boot);}else{boot();}
 </script>
 </body>
