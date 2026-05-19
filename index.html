@@ -735,11 +735,24 @@ function resetAll(){
   loadState();incRows=[];expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});curTab='Budget';render();toast('All data reset');
 }
 
+/* Pre-fill incRows on first load — either from saved month or from cfg.incSources */
+function initRowsForCurrentMonth(){
+  var key=curKey(),saved=null;
+  for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===key){saved=finHistory[i];break;}}
+  if(saved){
+    incRows=JSON.parse(JSON.stringify(saved.ir));
+    expRows=JSON.parse(JSON.stringify(saved.er));
+  }else{
+    incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
+    expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
+  }
+}
+
 /* ── Boot ── */
 function boot(){
-  try{loadState();render();}
+  try{loadState();initRowsForCurrentMonth();render();}
   catch(e){
-    try{localStorage.removeItem(SK.s);loadState();render();toast('Settings reset');}
+    try{localStorage.removeItem(SK.s);loadState();initRowsForCurrentMonth();render();toast('Settings reset');}
     catch(e2){
       var hs=document.getElementById('hsub'),rt=document.getElementById('root');
       if(hs)hs.textContent='Error — please reload';
