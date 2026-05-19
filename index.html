@@ -292,27 +292,104 @@ function rBudget(root){
 }
 
 function bldRows(type){
-  var data=type==='i'?incRows:expRows,ti=sumAmt(incRows),te=sumAmt(expRows);
-  var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;el.innerHTML='';
-  data.forEach(function(item,i){
-    var ob=type==='e'&&te>ti&&ti>0&&item.amt>0;
-    var d=document.createElement('div');d.className='irow'+(ob?' ob':'');
-    var tx=document.createElement('input');tx.type='text';tx.placeholder=type==='i'?'Source':'Category';tx.value=item.lbl||'';tx.autocomplete='off';
-    tx.addEventListener('input',(function(t,idx){return function(e){updL(t,idx,e.target.value);};})(type,i));
-    var nm=document.createElement('input');nm.type='number';nm.placeholder='0';nm.min='0';nm.step='0.01';nm.setAttribute('inputmode','decimal');nm.value=item.amt||'';
-    nm.addEventListener('focus',function(){if(parseFloat(this.value)===0)this.value='';});
-    nm.addEventListener('blur',function(){if(this.value==='')this.value='0';});
-    nm.addEventListener('input',(function(t,idx){return function(e){updA(t,idx,e.target.value);};})(type,i));
-    var xb=document.createElement('button');xb.className='xbtn';xb.setAttribute('aria-label','Remove');xb.textContent='\u2715';
-    xb.addEventListener('click',(function(t,idx){return function(){remR(t,idx);};})(type,i));
-    d.appendChild(tx);d.appendChild(nm);d.appendChild(xb);el.appendChild(d);
-  });
+  /* Full rebuild — used only on initial render, tab switch, or month change.
+     For incremental add/remove, use appendOneRow / removeOneRow which preserve focus. */
+  var data=type==='i'?incRows:expRows;
+  var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;
+  el.innerHTML='';
+  data.forEach(function(_,i){el.appendChild(buildRowEl(type,i));});
+  updOverBudget();
 }
 
-function addR(t){(t==='i'?incRows:expRows).push({lbl:'',amt:0});bldRows(t);debounce();}
-function remR(t,i){(t==='i'?incRows:expRows).splice(i,1);bldRows(t);debounce();}
-function updL(t,i,v){(t==='i'?incRows:expRows)[i].lbl=v;debounce();}
-function updA(t,i,v){(t==='i'?incRows:expRows)[i].amt=parseFloat(v)||0;debounce();}
+function buildRowEl(type,i){
+  /* Build a single row DOM element bound to data[i] by index.
+     The closure captures `type` and `i` — both are stable refs to the array slot. */
+  var data=type==='i'?incRows:expRows;
+  var item=data[i];
+  var d=document.createElement('div');
+  d.className='irow';
+  d.setAttribute('data-row-type',type);
+  d.setAttribute('data-row-idx',i);
+
+  var tx=document.createElement('input');
+  tx.type='text';
+  tx.placeholder=type==='i'?'Source':'Category';
+  tx.value=item.lbl||'';
+  tx.autocomplete='off';
+  tx.addEventListener('input',function(e){
+    /* Read live idx from DOM attribute — survives reindexing on row removal */
+    var idx=parseInt(d.getAttribute('data-row-idx'),10);
+    var arr=type==='i'?incRows:expRows;
+    if(arr[idx])arr[idx].lbl=e.target.value;
+    debounce();
+  });
+
+  var nm=document.createElement('input');
+  nm.type='number';nm.placeholder='0';nm.min='0';nm.step='0.01';
+  nm.setAttribute('inputmode','decimal');
+  nm.value=item.amt||'';
+  nm.addEventListener('focus',function(){if(parseFloat(this.value)===0)this.value='';});
+  nm.addEventListener('blur',function(){
+    if(this.value===''){this.value='0';}
+    /* Sync to state on blur regardless — covers iOS edge cases where input event might not fire */
+    var idx=parseInt(d.getAttribute('data-row-idx'),10);
+    var arr=type==='i'?incRows:expRows;
+    if(arr[idx])arr[idx].amt=parseFloat(this.value)||0;
+    debounce();
+  });
+  nm.addEventListener('input',function(e){
+    var idx=parseInt(d.getAttribute('data-row-idx'),10);
+    var arr=type==='i'?incRows:expRows;
+    if(arr[idx])arr[idx].amt=parseFloat(e.target.value)||0;
+    debounce();
+  });
+
+  var xb=document.createElement('button');
+  xb.className='xbtn';xb.setAttribute('aria-label','Remove');xb.textContent='\u2715';
+  xb.addEventListener('click',function(){
+    var idx=parseInt(d.getAttribute('data-row-idx'),10);
+    removeOneRow(type,idx);
+  });
+
+  d.appendChild(tx);d.appendChild(nm);d.appendChild(xb);
+  return d;
+}
+
+function reindexRows(type){
+  /* After insert/delete, refresh data-row-idx on all rows so their event handlers
+     read the correct array slot. This is the key to bug-free incremental updates. */
+  var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;
+  var rows=el.querySelectorAll('.irow');
+  rows.forEach(function(row,i){row.setAttribute('data-row-idx',i);});
+}
+
+function appendOneRow(type){
+  /* Append a single new row to the DOM — does NOT touch existing rows.
+     Existing input focus, values, and IME state are preserved. */
+  var arr=type==='i'?incRows:expRows;
+  arr.push({lbl:'',amt:0});
+  var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;
+  el.appendChild(buildRowEl(type,arr.length-1));
+  updOverBudget();
+}
+
+function removeOneRow(type,i){
+  /* Remove a single row from DOM + array, then reindex remaining rows.
+     Other rows' DOM (and focus/value) is untouched. */
+  var arr=type==='i'?incRows:expRows;
+  if(i<0||i>=arr.length)return;
+  arr.splice(i,1);
+  var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;
+  var rows=el.querySelectorAll('.irow');
+  if(rows[i])el.removeChild(rows[i]);
+  reindexRows(type);
+  debounce();
+}
+
+function addR(t){appendOneRow(t);}
+function remR(t,i){removeOneRow(t,i);}
+function updL(t,i,v){var arr=t==='i'?incRows:expRows;if(arr[i])arr[i].lbl=v;debounce();}
+function updA(t,i,v){var arr=t==='i'?incRows:expRows;if(arr[i])arr[i].amt=parseFloat(v)||0;debounce();}
 
 /* Toggle .ob over-budget highlight on existing rows WITHOUT rebuilding them.
    This preserves input focus so the user can keep typing. */
