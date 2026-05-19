@@ -51,6 +51,21 @@ body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-i
 .irow.ob input{border-color:var(--red)!important;background:var(--rl)!important}
 input:focus{outline:2px solid var(--red);outline-offset:1px}
 .xbtn{background:none;border:none;font-size:20px;color:var(--tm);cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0;font-family:inherit}
+.qabtn{background:var(--gll);border:none;font-size:16px;font-weight:700;color:var(--green);cursor:pointer;padding:0;width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit;line-height:1}
+.qabtn:active{transform:scale(.92)}
+.qa-overlay{background:var(--gll);border:1.5px solid var(--green);border-radius:var(--rs);padding:10px 12px;margin:-4px 0 8px;display:flex;align-items:center;gap:8px;animation:qa-in .15s ease-out}
+.qa-overlay.sub{border-color:var(--red);background:var(--rl)}
+@keyframes qa-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.qa-label{font-size:11px;color:var(--tm);font-weight:600;flex-shrink:0}
+.qa-mode{width:34px;height:34px;border-radius:50%;border:none;background:var(--green);color:#fff;font-size:18px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:inherit;display:flex;align-items:center;justify-content:center;line-height:1}
+.qa-mode.sub{background:var(--red)}
+.qa-mode:active{transform:scale(.92)}
+.qa-input{flex:1;font-size:15px;font-weight:600;padding:7px 10px;border-radius:6px;border:.5px solid var(--br);background:var(--sf);color:var(--tx);font-family:inherit;text-align:right;min-width:60px}
+.qa-input:focus{outline:2px solid var(--red);outline-offset:1px}
+.qa-ok,.qa-cancel{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;font-size:16px;font-weight:700;flex-shrink:0;font-family:inherit;display:flex;align-items:center;justify-content:center}
+.qa-ok{background:var(--green);color:#fff}
+.qa-cancel{background:transparent;color:var(--tm);border:.5px solid var(--br)}
+.qa-ok:active,.qa-cancel:active{transform:scale(.92)}
 .addbtn{width:100%;font-size:13px;color:var(--tm);background:none;border:.5px dashed var(--br);border-radius:var(--rs);padding:8px;cursor:pointer;margin-top:4px;font-family:inherit}
 .brow{display:flex;gap:8px;margin-bottom:14px}
 .btn{flex:1;font-size:14px;font-weight:500;padding:11px;border-radius:var(--rs);cursor:pointer;border:.5px solid var(--br);background:var(--sf);color:var(--tx);font-family:inherit}
@@ -196,6 +211,22 @@ function debounce(){clearTimeout(debT);debT=setTimeout(updMets,150);}
 function loanDebounce(){clearTimeout(loanDebT);loanDebT=setTimeout(function(){lsSet(SK.l,loans);},400);}
 function met(lbl,cls,val){return'<div class="met"><div class="met-l">'+lbl+'</div><div class="met-v '+cls+'">'+esc(val)+'</div></div>';}
 
+/* Safe math evaluator for amount fields.
+   Allows: digits, + - * / ( ) . and whitespace.
+   Returns null if invalid; otherwise the numeric result clamped to >= 0. */
+function evalAmount(expr){
+  if(expr==null)return null;
+  var s=String(expr).trim();
+  if(s==='')return 0;
+  if(!/^[0-9+\-*/().\s]+$/.test(s))return null;
+  if(/[+\-*/]{2,}/.test(s.replace(/--/g,'-')))return null;
+  try{
+    var result=Function('"use strict";return ('+s+')')();
+    if(typeof result!=='number'||!isFinite(result))return null;
+    return Math.max(0,Math.round(result*100)/100);
+  }catch(e){return null;}
+}
+
 /* Annuity formula: P·r/(1-(1+r)^-n) */
 function monthlyPmt(balance,annualRate,n){
   if(!balance||!n)return 0;
@@ -325,23 +356,47 @@ function buildRowEl(type,i){
   });
 
   var nm=document.createElement('input');
-  nm.type='number';nm.placeholder='0';nm.min='0';nm.step='0.01';
+  /* type="text" with inputmode="decimal" allows arithmetic expressions like "120+180"
+     while still showing the numeric keypad on mobile. Native type="number" rejects + sign. */
+  nm.type='text';nm.placeholder='0';
   nm.setAttribute('inputmode','decimal');
+  nm.setAttribute('autocomplete','off');
   nm.value=item.amt||'';
   nm.addEventListener('focus',function(){if(parseFloat(this.value)===0)this.value='';});
   nm.addEventListener('blur',function(){
-    if(this.value===''){this.value='0';}
-    /* Sync to state on blur regardless — covers iOS edge cases where input event might not fire */
+    /* Evaluate arithmetic expression on blur — "120+180+45" becomes 345 */
     var idx=parseInt(d.getAttribute('data-row-idx'),10);
     var arr=type==='i'?incRows:expRows;
-    if(arr[idx])arr[idx].amt=parseFloat(this.value)||0;
+    var result=evalAmount(this.value);
+    if(result===null){
+      /* Invalid expression — revert to stored value */
+      this.value=arr[idx]?(arr[idx].amt||0):0;
+    }else{
+      this.value=result===0?'0':String(result);
+      if(arr[idx])arr[idx].amt=result;
+    }
     debounce();
   });
+  /* Enter key triggers blur (which runs evaluation) */
+  nm.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();this.blur();}});
   nm.addEventListener('input',function(e){
+    /* Mid-typing: only sync state if the value is a clean number (no operators yet).
+       If user is mid-expression like "120+", don't write garbage to state. */
     var idx=parseInt(d.getAttribute('data-row-idx'),10);
     var arr=type==='i'?incRows:expRows;
-    if(arr[idx])arr[idx].amt=parseFloat(e.target.value)||0;
-    debounce();
+    var v=e.target.value;
+    /* Plain number? Update state. Has operators? Wait for blur. */
+    if(/^-?\d*\.?\d*$/.test(v)){
+      if(arr[idx])arr[idx].amt=parseFloat(v)||0;
+      debounce();
+    }
+  });
+
+  var qb=document.createElement('button');
+  qb.className='qabtn';qb.setAttribute('aria-label','Quick add/subtract');qb.textContent='+';
+  qb.addEventListener('click',function(){
+    var idx=parseInt(d.getAttribute('data-row-idx'),10);
+    toggleQuickAdd(type,idx,d);
   });
 
   var xb=document.createElement('button');
@@ -351,8 +406,99 @@ function buildRowEl(type,i){
     removeOneRow(type,idx);
   });
 
-  d.appendChild(tx);d.appendChild(nm);d.appendChild(xb);
+  d.appendChild(tx);d.appendChild(nm);d.appendChild(qb);d.appendChild(xb);
   return d;
+}
+
+/* ── Quick-add overlay ── */
+var qaState={mode:'add'};  /* 'add' or 'sub' — persists across opens within a session */
+
+function closeQuickAdd(){
+  var existing=document.querySelectorAll('.qa-overlay');
+  existing.forEach(function(el){el.parentNode.removeChild(el);});
+}
+
+function toggleQuickAdd(type,idx,rowEl){
+  /* If an overlay is already attached to this row, close it (toggle off) */
+  var next=rowEl.nextElementSibling;
+  if(next&&next.classList.contains('qa-overlay')&&next.getAttribute('data-qa-type')===type&&parseInt(next.getAttribute('data-qa-idx'),10)===idx){
+    closeQuickAdd();return;
+  }
+  /* Otherwise close any open overlay and open a new one */
+  closeQuickAdd();
+  openQuickAdd(type,idx,rowEl);
+}
+
+function openQuickAdd(type,idx,rowEl){
+  var arr=type==='i'?incRows:expRows;
+  if(!arr[idx])return;
+  var labelTxt=arr[idx].lbl||(type==='i'?'this source':'this category');
+
+  var ov=document.createElement('div');
+  ov.className='qa-overlay'+(qaState.mode==='sub'?' sub':'');
+  ov.setAttribute('data-qa-type',type);
+  ov.setAttribute('data-qa-idx',idx);
+
+  var lbl=document.createElement('span');
+  lbl.className='qa-label';
+  lbl.textContent=(qaState.mode==='sub'?'Subtract from ':'Add to ')+labelTxt+':';
+
+  var modeBtn=document.createElement('button');
+  modeBtn.className='qa-mode'+(qaState.mode==='sub'?' sub':'');
+  modeBtn.textContent=qaState.mode==='sub'?'\u2212':'+';
+  modeBtn.setAttribute('aria-label','Toggle add/subtract');
+
+  var input=document.createElement('input');
+  input.className='qa-input';input.type='text';
+  input.setAttribute('inputmode','decimal');input.setAttribute('autocomplete','off');
+  input.placeholder='0';
+
+  var okBtn=document.createElement('button');
+  okBtn.className='qa-ok';okBtn.textContent='\u2713';
+  okBtn.setAttribute('aria-label','Confirm');
+
+  var cancelBtn=document.createElement('button');
+  cancelBtn.className='qa-cancel';cancelBtn.textContent='\u2715';
+  cancelBtn.setAttribute('aria-label','Cancel');
+
+  /* Toggle handler — switches mode and updates the entire overlay style */
+  modeBtn.addEventListener('click',function(){
+    qaState.mode=qaState.mode==='add'?'sub':'add';
+    var isSub=qaState.mode==='sub';
+    ov.classList.toggle('sub',isSub);
+    modeBtn.classList.toggle('sub',isSub);
+    modeBtn.textContent=isSub?'\u2212':'+';
+    lbl.textContent=(isSub?'Subtract from ':'Add to ')+labelTxt+':';
+    input.focus();
+  });
+
+  function applyQuickAdd(){
+    var val=evalAmount(input.value);
+    if(val===null||val===0){closeQuickAdd();return;}
+    var arr=type==='i'?incRows:expRows;
+    if(!arr[idx]){closeQuickAdd();return;}
+    var current=arr[idx].amt||0;
+    var newVal=qaState.mode==='sub'?current-val:current+val;
+    newVal=Math.max(0,Math.round(newVal*100)/100);
+    arr[idx].amt=newVal;
+    /* Update the corresponding amount input in the row */
+    var amtInput=rowEl.querySelectorAll('input')[1];
+    if(amtInput)amtInput.value=newVal===0?'0':String(newVal);
+    closeQuickAdd();
+    debounce();
+    toast((qaState.mode==='sub'?'\u2212':'+')+fmtE(val)+' \u2192 '+fmtE(newVal));
+  }
+
+  okBtn.addEventListener('click',applyQuickAdd);
+  cancelBtn.addEventListener('click',closeQuickAdd);
+  input.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault();applyQuickAdd();}
+    else if(e.key==='Escape'){e.preventDefault();closeQuickAdd();}
+  });
+
+  ov.appendChild(lbl);ov.appendChild(modeBtn);ov.appendChild(input);ov.appendChild(okBtn);ov.appendChild(cancelBtn);
+  rowEl.parentNode.insertBefore(ov,rowEl.nextSibling);
+  setTimeout(function(){input.focus();},50);
 }
 
 function reindexRows(type){
