@@ -50,6 +50,16 @@ body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-i
 .irow input[type=number]{width:108px;font-size:14px;padding:8px 10px;border-radius:var(--rs);border:.5px solid var(--br);background:var(--bg);color:var(--tx);font-family:inherit}
 .irow.ob input{border-color:var(--red)!important;background:var(--rl)!important}
 input:focus{outline:2px solid var(--red);outline-offset:1px}
+.irow.loan-row{background:rgba(230,0,0,0.04)}
+.irow.loan-row input[type=text]{background:transparent;color:var(--tx);font-weight:600;border:none;cursor:default}
+.irow.loan-row input[type=text]:focus{outline:none}
+.loan-helper{font-size:10px;color:var(--tm);padding:0 4px 6px;margin-top:-4px;line-height:1.4}
+.loan-helper.warn{color:var(--rd);font-weight:600}
+.loan-helper .pi{color:var(--green);font-weight:600}
+.loan-helper .ii{color:var(--rd);font-weight:600}
+.loan-archived{opacity:0.5}
+.loan-archived .lcard{border-style:dashed}
+.paidoff-badge{background:var(--gl);color:var(--green);font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px}
 .xbtn{background:none;border:none;font-size:20px;color:var(--tm);cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0;font-family:inherit}
 .qabtn{background:var(--gll);border:none;font-size:16px;font-weight:700;color:var(--green);cursor:pointer;padding:0;width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit;line-height:1}
 .qabtn:active{transform:scale(.92)}
@@ -132,7 +142,7 @@ hr.dv{border:none;border-top:.5px solid var(--br);margin:10px 0}
 </head>
 <body>
 <div class="warn" id="wb">Expenses exceed income this month</div>
-<div class="hdr"><h1>Personal Finance</h1><p id="hsub">Loading...</p></div>
+<div class="hdr"><h1>Personal Finance</h1><p id="hsub">Loading...</p><div class="savestatus" id="saveStatus"></div></div>
 <div class="tabs" id="tabbar"></div>
 <div class="pg" id="root"></div>
 <div class="toast" id="tst"></div>
@@ -141,9 +151,9 @@ var EUR='\u20ac';
 var COLORS=['#E60000','#6A6A6A','#838383','#ACACAC','#993C1D','#444441','#A32D2D','#185FA5','#0F6E56','#D6D6D6'];
 var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var TABS=['Budget','Advisor','Loans','Analysis','Action Plan','Investments','Settings'];
-var DEFEXP=['Loan payments','Groceries','Electricity','Take-Out food','Water bill','Night out','Various'];
-var DEFLOAN=[{name:'Loan 1',balance:0,rate:0,inst:0,monthly:0},{name:'Loan 2',balance:0,rate:0,inst:0,monthly:0},{name:'Loan 3',balance:0,rate:0,inst:0,monthly:0}];
-var TARGETS={'Loan payments':0,'Groceries':300,'Electricity':120,'Take-Out food':100,'Water bill':50,'Night out':200,'Various':150};
+var DEFEXP=['Groceries','Electricity','Take-Out food','Water bill','Night out','Various'];
+var DEFLOAN=[{id:'L-1',name:'Loan 1',balance:0,rate:0,inst:0,monthly:0,archived:false},{id:'L-2',name:'Loan 2',balance:0,rate:0,inst:0,monthly:0,archived:false},{id:'L-3',name:'Loan 3',balance:0,rate:0,inst:0,monthly:0,archived:false}];
+var TARGETS={'Groceries':300,'Electricity':120,'Take-Out food':100,'Water bill':50,'Night out':200,'Various':150};
 var SK={h:'fh5',l:'fl5',s:'fs5',n:'fn5',d:'fd5'};
 var QA=[
   {q:'Why S&P 500 over a global fund?',a:'Buffett says put 90% in a low-cost S&P 500 index fund. US companies already generate 40-60% of revenues internationally — global exposure without extra cost. CSPX charges 0.07% vs VWCE at 0.22%. Over 30 years, that difference costs tens of thousands of euros.'},
@@ -188,6 +198,7 @@ function loadState(){
   if(!Array.isArray(cfg.incSources)||cfg.incSources.length===0){cfg.incSources=[{lbl:'Salary',amt:0},{lbl:'Other income',amt:0}];lsSet(SK.s,cfg);}
   notes=lsGet(SK.n,{});
   drafts=lsGet(SK.d,{});
+  migrateLoans();
   /* Clean up orphaned drafts: if a finalized entry exists for the same key, drop the draft */
   var changed=false;
   Object.keys(drafts).forEach(function(k){
@@ -214,7 +225,7 @@ function curKey(){return selY+'-'+pad2(selM);}
 function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,parseFloat(v)||0));}
 function toast(msg){var t=document.getElementById('tst');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on');},2400);}
 function mkChart(id,cfg2){if(typeof Chart==='undefined')return;if(ch[id]){ch[id].destroy();delete ch[id];}var el=document.getElementById(id);if(el)ch[id]=new Chart(el,cfg2);}
-function debounce(){clearTimeout(debT);debT=setTimeout(updMets,150);}
+function debounce(){clearTimeout(debT);debT=setTimeout(function(){updMets();saveDraft();},400);}
 function loanDebounce(){clearTimeout(loanDebT);loanDebT=setTimeout(function(){lsSet(SK.l,loans);},400);}
 function met(lbl,cls,val){return'<div class="met"><div class="met-l">'+lbl+'</div><div class="met-v '+cls+'">'+esc(val)+'</div></div>';}
 
@@ -249,14 +260,91 @@ function fvAnnuity(pmt,annualRate,years){
 }
 /* Total monthly loan payments across all loans */
 function totalLoanPayments(){
-  return loans.reduce(function(s,l){
+  return loans.filter(function(l){return !l.archived;}).reduce(function(s,l){
     return s+monthlyPmt(l.balance||0,l.rate||0,l.inst||0);
   },0);
 }
 
+/* ── Loan helpers ── */
+function genLoanId(){return'L-'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);}
+
+function migrateLoans(){
+  /* Assign stable IDs to legacy loans that don't have one yet.
+     Also ensure archived flag exists on every loan. */
+  if(!Array.isArray(loans))return;
+  var changed=false;
+  loans.forEach(function(l,i){
+    if(!l.id){l.id='L-'+(i+1);changed=true;}
+    if(l.archived===undefined){l.archived=false;changed=true;}
+  });
+  if(changed)lsSet(SK.l,loans);
+}
+
+function activeLoans(){return loans.filter(function(l){return !l.archived;});}
+function archivedLoans(){return loans.filter(function(l){return l.archived;});}
+function findLoanById(id){for(var i=0;i<loans.length;i++)if(loans[i].id===id)return loans[i];return null;}
+
+function addLoan(){
+  loans.push({id:genLoanId(),name:'New loan',balance:0,rate:0,inst:0,monthly:0,archived:false});
+  lsSet(SK.l,loans);
+}
+function archiveLoan(id){
+  var l=findLoanById(id);if(!l)return;
+  if(!confirm('Archive '+esc(l.name)+'?\n\nThe loan disappears from active lists but historical data is preserved. You can restore it from the Loans tab.'))return;
+  l.archived=true;lsSet(SK.l,loans);
+}
+function unarchiveLoan(id){
+  var l=findLoanById(id);if(!l)return;
+  l.archived=false;lsSet(SK.l,loans);
+}
+
+/* Amortization: compute interest and principal for a given payment */
+function computeAmortization(loan,paid){
+  var balance=loan.balance||0;
+  var rate=loan.rate||0;
+  var interest=balance*(rate/100)/12;
+  var principal=Math.max(0,paid-interest);
+  /* Cap principal at remaining balance (no negative balances) */
+  if(principal>balance)principal=balance;
+  var newBalance=Math.max(0,balance-principal);
+  return{
+    interest:Math.round(interest*100)/100,
+    principal:Math.round(principal*100)/100,
+    newBalance:Math.round(newBalance*100)/100,
+    underpayment:paid<interest&&paid>0,
+    paidOff:newBalance===0
+  };
+}
+
+/* Reconcile expRows with active loans — call before rendering Budget tab.
+   Ensures one row per active loan, in loan-tab order, at the top of expRows.
+   Removes orphaned loan rows (loanId pointing to archived/deleted loans).
+   Preserves user-entered amounts across reconciliation. */
+function reconcileLoanRows(){
+  if(!Array.isArray(expRows))expRows=[];
+  /* Extract existing loan rows by loanId */
+  var existing={};
+  var nonLoanRows=[];
+  expRows.forEach(function(r){
+    if(r.loanId){existing[r.loanId]=r;}
+    else{nonLoanRows.push(r);}
+  });
+  /* Build new loan rows for each active loan, preserving amounts where possible */
+  var loanRowsNew=activeLoans().map(function(l){
+    var prev=existing[l.id];
+    return{
+      loanId:l.id,
+      lbl:'Loan: '+l.name,
+      amt:prev?(prev.amt||0):0
+    };
+  });
+  /* Final row order: loan rows first (in loan order), then non-loan rows */
+  expRows=loanRowsNew.concat(nonLoanRows);
+}
+
 /* ── Export / Import / Settings ── */
 function exportData(){
-  var blob=new Blob([JSON.stringify({version:11,exported:new Date().toISOString(),history:finHistory,loans:loans,settings:cfg,notes:notes},null,2)],{type:'application/json'});
+  var blob=new Blob([JSON.stringify({version:12,exported:new Date().toISOString(),history:finHistory,loans:loans,settings:cfg,notes:notes,drafts:drafts},null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='finance-backup-'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('Exported');
@@ -271,11 +359,11 @@ function importData(){
         var d=JSON.parse(ev.target.result);
         if(!d.history||!Array.isArray(d.history))throw new Error('Invalid file');
         if(!confirm('Import replaces all data. Continue?'))return;
-        finHistory=d.history||[];loans=d.loans||DEFLOAN;notes=d.notes||{};
+        finHistory=d.history||[];loans=d.loans||DEFLOAN;notes=d.notes||{};drafts=d.drafts||{};
         if(d.settings&&d.settings.incSources)cfg=d.settings;
         else if(d.settings)cfg={incSources:[{lbl:'Salary',amt:d.settings.sal||d.settings.normalIncome||0},{lbl:d.settings.otherLbl||'Other income',amt:d.settings.other||0}]};
         else cfg={incSources:[{lbl:'Salary',amt:0},{lbl:'Other income',amt:0}]};
-        lsSet(SK.h,finHistory);lsSet(SK.l,loans);lsSet(SK.s,cfg);lsSet(SK.n,notes);
+        lsSet(SK.h,finHistory);lsSet(SK.l,loans);lsSet(SK.s,cfg);lsSet(SK.n,notes);lsSet(SK.d,drafts);
         render();toast('Imported — '+finHistory.length+' months restored');
       }catch(err){toast('Import failed: '+err.message);}
     };
@@ -310,18 +398,20 @@ function go(t){curTab=t;render();}
    TAB 1 — BUDGET
 ══════════════════════════════════════════════ */
 function rBudget(root){
+  /* Reconcile loan rows with active loans on every render of Budget tab */
+  reconcileLoanRows();
   var ti=sumAmt(incRows),te=sumAmt(expRows),bal=ti-te;
   var rate=ti>0?Math.min((bal/ti)*100,100):null,over=ti>0&&te>ti;
   root.innerHTML=
     '<div class="mbar"><select id="ms" onchange="chgM()"></select><select id="ys" style="width:88px;flex:none" onchange="chgM()"></select></div>'
-    +'<div class="notice" style="font-size:12px;margin-bottom:10px">Income pre-filled from Advisor. Edit here only if this month differs.</div>'
+    +'<div class="notice" style="font-size:12px;margin-bottom:10px">Autosave on. Edit anytime \u2014 your draft is saved continuously. "Close month" finalizes and advances to the next month.</div>'
     +'<div class="lbl">Income</div><div class="card"><div id="ir"></div><button class="addbtn" onclick="addR(\'i\')">+ Add income source</button></div>'
     +'<div class="lbl">Expenses</div><div class="card"><div id="er"></div><button class="addbtn" onclick="addR(\'e\')">+ Add expense</button></div>'
     +'<div class="g2" id="mets">'+met('Income','pos',fmtS(ti))+met('Expenses','neg',fmtS(te))+met(over?'Balance (OVER)':'Balance',bal>=0?'pos':'neg',fmtS(bal))+met('Savings rate',rate!==null&&rate>=0?'pos':'neg',rate!==null?rate.toFixed(1)+'%':'--')+'</div>'
     +'<div class="card"><div class="lbl" style="margin-bottom:8px">Expense breakdown</div><div class="cw"><canvas id="pieC" role="img" aria-label="Expense breakdown"></canvas></div><div class="leg" id="pieLeg"></div></div>'
     +'<div class="card"><div class="lbl" style="margin-bottom:8px">Income vs expenses</div><div class="cw"><canvas id="barC" role="img" aria-label="Income vs expenses"></canvas></div></div>'
     +'<div class="card"><div class="lbl" style="margin-bottom:8px">By category</div><div class="cwl"><canvas id="catC" role="img" aria-label="By category"></canvas></div></div>'
-    +'<div class="brow"><button class="btn d" onclick="clrCur()">Clear</button><button class="btn p" onclick="saveMo()">Save month</button></div>'
+    +'<div class="brow"><button class="btn d" onclick="clrCur()">Discard draft</button><button class="btn p" onclick="closeMonth()">Close month \u2192</button></div>'
     +'<div class="lbl">History</div><div class="card" id="hcard"></div>';
   var ms=document.getElementById('ms'),ys=document.getElementById('ys');
   MO.forEach(function(m,i){var o=new Option(m,i);if(i===selM)o.selected=true;ms.add(o);});
@@ -340,12 +430,16 @@ function bldRows(type){
 }
 
 function buildRowEl(type,i){
-  /* Build a single row DOM element bound to data[i] by index.
-     The closure captures `type` and `i` — both are stable refs to the array slot. */
   var data=type==='i'?incRows:expRows;
   var item=data[i];
+  var isLoanRow=type==='e'&&item.loanId;
+  var loan=isLoanRow?findLoanById(item.loanId):null;
+
+  var wrapper=document.createElement('div');
+  wrapper.style.display='block';
+
   var d=document.createElement('div');
-  d.className='irow';
+  d.className='irow'+(isLoanRow?' loan-row':'');
   d.setAttribute('data-row-type',type);
   d.setAttribute('data-row-idx',i);
 
@@ -354,8 +448,12 @@ function buildRowEl(type,i){
   tx.placeholder=type==='i'?'Source':'Category';
   tx.value=item.lbl||'';
   tx.autocomplete='off';
+  if(isLoanRow){
+    tx.readOnly=true;
+    tx.title='Loan name edited in Loans tab';
+  }
   tx.addEventListener('input',function(e){
-    /* Read live idx from DOM attribute — survives reindexing on row removal */
+    if(isLoanRow)return;
     var idx=parseInt(d.getAttribute('data-row-idx'),10);
     var arr=type==='i'?incRows:expRows;
     if(arr[idx])arr[idx].lbl=e.target.value;
@@ -363,38 +461,32 @@ function buildRowEl(type,i){
   });
 
   var nm=document.createElement('input');
-  /* type="text" with inputmode="decimal" allows arithmetic expressions like "120+180"
-     while still showing the numeric keypad on mobile. Native type="number" rejects + sign. */
   nm.type='text';nm.placeholder='0';
   nm.setAttribute('inputmode','decimal');
   nm.setAttribute('autocomplete','off');
   nm.value=item.amt||'';
   nm.addEventListener('focus',function(){if(parseFloat(this.value)===0)this.value='';});
   nm.addEventListener('blur',function(){
-    /* Evaluate arithmetic expression on blur — "120+180+45" becomes 345 */
     var idx=parseInt(d.getAttribute('data-row-idx'),10);
     var arr=type==='i'?incRows:expRows;
     var result=evalAmount(this.value);
     if(result===null){
-      /* Invalid expression — revert to stored value */
       this.value=arr[idx]?(arr[idx].amt||0):0;
     }else{
       this.value=result===0?'0':String(result);
       if(arr[idx])arr[idx].amt=result;
+      updateLoanHelper(d,arr[idx]);
     }
     debounce();
   });
-  /* Enter key triggers blur (which runs evaluation) */
   nm.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();this.blur();}});
   nm.addEventListener('input',function(e){
-    /* Mid-typing: only sync state if the value is a clean number (no operators yet).
-       If user is mid-expression like "120+", don't write garbage to state. */
     var idx=parseInt(d.getAttribute('data-row-idx'),10);
     var arr=type==='i'?incRows:expRows;
     var v=e.target.value;
-    /* Plain number? Update state. Has operators? Wait for blur. */
     if(/^-?\d*\.?\d*$/.test(v)){
       if(arr[idx])arr[idx].amt=parseFloat(v)||0;
+      updateLoanHelper(d,arr[idx]);
       debounce();
     }
   });
@@ -406,15 +498,59 @@ function buildRowEl(type,i){
     toggleQuickAdd(type,idx,d);
   });
 
-  var xb=document.createElement('button');
-  xb.className='xbtn';xb.setAttribute('aria-label','Remove');xb.textContent='\u2715';
-  xb.addEventListener('click',function(){
-    var idx=parseInt(d.getAttribute('data-row-idx'),10);
-    removeOneRow(type,idx);
-  });
+  d.appendChild(tx);d.appendChild(nm);d.appendChild(qb);
 
-  d.appendChild(tx);d.appendChild(nm);d.appendChild(qb);d.appendChild(xb);
-  return d;
+  /* Loan rows have no remove button \u2014 manage via Loans tab */
+  if(!isLoanRow){
+    var xb=document.createElement('button');
+    xb.className='xbtn';xb.setAttribute('aria-label','Remove');xb.textContent='\u2715';
+    xb.addEventListener('click',function(){
+      var idx=parseInt(d.getAttribute('data-row-idx'),10);
+      removeOneRow(type,idx);
+    });
+    d.appendChild(xb);
+  }else{
+    /* Spacer to keep alignment when no x button */
+    var spacer=document.createElement('div');spacer.style.width='28px';spacer.style.flexShrink='0';
+    d.appendChild(spacer);
+  }
+
+  wrapper.appendChild(d);
+
+  /* Loan amortization helper text \u2014 shown live below the row */
+  if(isLoanRow&&loan){
+    var helper=document.createElement('div');
+    helper.className='loan-helper';
+    helper.setAttribute('data-helper-for',loan.id);
+    wrapper.appendChild(helper);
+    updateLoanHelperEl(helper,item,loan);
+  }
+  return wrapper;
+}
+
+/* Live update of the helper text below a loan row */
+function updateLoanHelper(rowEl,item){
+  if(!item||!item.loanId)return;
+  var wrapper=rowEl.parentNode;if(!wrapper)return;
+  var helper=wrapper.querySelector('.loan-helper');
+  if(!helper)return;
+  var loan=findLoanById(item.loanId);if(!loan)return;
+  updateLoanHelperEl(helper,item,loan);
+}
+
+function updateLoanHelperEl(helper,item,loan){
+  var paid=parseFloat(item.amt)||0;
+  var amort=computeAmortization(loan,paid);
+  if(paid<=0){
+    helper.className='loan-helper';
+    helper.innerHTML='Balance: <strong>'+fmtE(loan.balance)+'</strong> \u00b7 Rate: <strong>'+loan.rate+'%</strong> \u00b7 Est. interest this month: <strong>'+fmtE(amort.interest)+'</strong>';
+  }else if(amort.underpayment){
+    helper.className='loan-helper warn';
+    helper.innerHTML='\u26a0 Payment ('+fmtE(paid)+') is less than interest ('+fmtE(amort.interest)+'). Balance will grow.';
+  }else{
+    helper.className='loan-helper';
+    helper.innerHTML='Of '+fmtE(paid)+': <span class="ii">'+fmtE(amort.interest)+' interest</span> \u00b7 <span class="pi">'+fmtE(amort.principal)+' to principal</span> \u2192 new balance <strong>'+fmtE(amort.newBalance)+'</strong>'+(amort.paidOff?' \u2705 paid off':'');
+  }
 }
 
 /* ── Quick-add overlay ── */
@@ -510,15 +646,14 @@ function openQuickAdd(type,idx,rowEl){
 
 function reindexRows(type){
   /* After insert/delete, refresh data-row-idx on all rows so their event handlers
-     read the correct array slot. This is the key to bug-free incremental updates. */
+     read the correct array slot. Works on the wrapper's inner .irow elements. */
   var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;
   var rows=el.querySelectorAll('.irow');
   rows.forEach(function(row,i){row.setAttribute('data-row-idx',i);});
 }
 
 function appendOneRow(type){
-  /* Append a single new row to the DOM — does NOT touch existing rows.
-     Existing input focus, values, and IME state are preserved. */
+  /* Append a single new row to the DOM — does NOT touch existing rows. */
   var arr=type==='i'?incRows:expRows;
   arr.push({lbl:'',amt:0});
   var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;
@@ -528,13 +663,16 @@ function appendOneRow(type){
 
 function removeOneRow(type,i){
   /* Remove a single row from DOM + array, then reindex remaining rows.
-     Other rows' DOM (and focus/value) is untouched. */
+     Rows are wrapper elements (containing the row + optional helper) so we remove the wrapper. */
   var arr=type==='i'?incRows:expRows;
   if(i<0||i>=arr.length)return;
+  /* Protect loan rows from accidental deletion */
+  if(arr[i]&&arr[i].loanId){toast('Loan rows are managed in the Loans tab');return;}
   arr.splice(i,1);
   var el=document.getElementById(type==='i'?'ir':'er');if(!el)return;
-  var rows=el.querySelectorAll('.irow');
-  if(rows[i])el.removeChild(rows[i]);
+  /* Each direct child of the container is a wrapper containing one .irow */
+  var wrappers=el.children;
+  if(wrappers[i])el.removeChild(wrappers[i]);
   reindexRows(type);
   debounce();
 }
@@ -572,31 +710,123 @@ function updMets(){
 
 function chgM(){
   var ms=document.getElementById('ms'),ys=document.getElementById('ys');if(!ms||!ys)return;
+  /* Flush any pending draft for the month we're leaving */
+  flushDraft();
   selM=parseInt(ms.value,10);selY=parseInt(ys.value,10);
   var key=selY+'-'+pad2(selM),saved=null;
   for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===key){saved=finHistory[i];break;}}
-  if(saved){incRows=JSON.parse(JSON.stringify(saved.ir));expRows=JSON.parse(JSON.stringify(saved.er));toast(saved.mo+' '+saved.yr+' loaded');}
-  else{incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});}
+  if(saved){
+    incRows=JSON.parse(JSON.stringify(saved.ir));expRows=JSON.parse(JSON.stringify(saved.er));
+    toast(saved.mo+' '+saved.yr+' (finalized) loaded');
+  }else if(drafts&&drafts[key]){
+    incRows=JSON.parse(JSON.stringify(drafts[key].ir||[]));
+    expRows=JSON.parse(JSON.stringify(drafts[key].er||[]));
+    toast(MO[selM]+' '+selY+' (draft) loaded');
+  }else{
+    incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
+    expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
+  }
+  lastDraftJSON=JSON.stringify({ir:incRows,er:expRows});
   render();
 }
 
-function clrCur(){incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});render();toast('Cleared');}
+function clrCur(){
+  if(!confirm('Discard draft for '+MO[selM]+' '+selY+'? This cannot be undone.'))return;
+  clearDraft(curKey());
+  incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
+  expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
+  lastDraftJSON='';
+  render();toast('Draft discarded');
+}
 
-function saveMo(){
+function closeMonth(){
   var ti=sumAmt(incRows),te=sumAmt(expRows);
-  if(ti<=0){toast('Enter income before saving');return;}
+  if(ti<=0){toast('Enter income before closing the month');return;}
+
+  /* Reconcile to make sure loan rows are current */
+  reconcileLoanRows();
+
+  /* Validate: check for underpayments on any loan row */
+  var underpayments=[];
+  expRows.forEach(function(r){
+    if(!r.loanId)return;
+    var l=findLoanById(r.loanId);if(!l||l.balance<=0)return;
+    var paid=parseFloat(r.amt)||0;
+    if(paid<=0)return;  /* zero payment is allowed (no underpayment because no payment) */
+    var amort=computeAmortization(l,paid);
+    if(amort.underpayment){
+      underpayments.push({name:l.name,paid:paid,interest:amort.interest});
+    }
+  });
+
+  if(underpayments.length){
+    var msg='\u26a0 UNDERPAYMENT DETECTED \u2014 the following loan payments are less than the interest owed:\n\n';
+    underpayments.forEach(function(u){
+      msg+='\u2022 '+u.name+': paid '+fmtE(u.paid)+', interest due '+fmtE(u.interest)+'\n';
+    });
+    msg+='\nClosing this month will INCREASE these loan balances. Continue?';
+    if(!confirm(msg))return;
+  }
+
+  if(!confirm('Close '+MO[selM]+' '+selY+'?\n\nThis finalizes the month, applies loan amortization, and advances to '+MO[(selM+1)%12]+' '+(selM===11?selY+1:selY)+'.'))return;
+
   var bal=ti-te,rate=Math.min((bal/ti)*100,100),savedMo=MO[selM],savedYr=selY,key=curKey();
   var ne=document.getElementById('mnote');if(ne){notes[key]=ne.value;lsSet(SK.n,notes);}
-  var entry={key:key,mo:savedMo,yr:savedYr,income:ti,expenses:te,balance:bal,rate:rate,ir:JSON.parse(JSON.stringify(incRows)),er:JSON.parse(JSON.stringify(expRows))};
+
+  /* Snapshot pre-close loan balances + apply amortization */
+  var loanBalancesBefore={};
+  var loanAmortization={};  /* per-loan interest/principal record */
+  loans.forEach(function(l){loanBalancesBefore[l.id]=l.balance||0;});
+
+  expRows.forEach(function(r){
+    if(!r.loanId)return;
+    var l=findLoanById(r.loanId);if(!l)return;
+    var paid=parseFloat(r.amt)||0;
+    if(paid<=0){
+      /* Even with no payment, interest accrues if there's a balance */
+      var amort=computeAmortization(l,0);
+      loanAmortization[l.id]={paid:0,interest:amort.interest,principal:0,balanceBefore:l.balance,balanceAfter:Math.max(0,(l.balance||0)+amort.interest-0)};
+      /* If no payment but interest accrues, balance grows */
+      l.balance=Math.round((l.balance+amort.interest)*100)/100;
+    }else{
+      var amort2=computeAmortization(l,paid);
+      loanAmortization[l.id]={paid:paid,interest:amort2.interest,principal:amort2.principal,balanceBefore:loanBalancesBefore[l.id],balanceAfter:amort2.newBalance};
+      l.balance=amort2.newBalance;
+    }
+    /* Decrement installments counter if any remain */
+    if(l.inst&&l.inst>0)l.inst=Math.max(0,l.inst-1);
+  });
+  lsSet(SK.l,loans);
+
+  var entry={
+    key:key,mo:savedMo,yr:savedYr,
+    income:ti,expenses:te,balance:bal,rate:rate,
+    ir:JSON.parse(JSON.stringify(incRows)),
+    er:JSON.parse(JSON.stringify(expRows)),
+    loanBalancesBefore:loanBalancesBefore,
+    loanAmortization:loanAmortization
+  };
   var idx=-1;for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===key){idx=i;break;}}
   if(idx>=0)finHistory[idx]=entry;else finHistory.unshift(entry);
   finHistory.sort(function(a,b){return a.key<b.key?1:a.key>b.key?-1:0;});
   lsSet(SK.h,finHistory);
+  clearDraft(key);
+
   selM++;if(selM>11){selM=0;selY++;}
-  incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
-  expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
-  toast(savedMo+' '+savedYr+' saved | Now: '+MO[selM]+' '+selY);render();
+  var nextKey=curKey();
+  if(drafts&&drafts[nextKey]){
+    incRows=JSON.parse(JSON.stringify(drafts[nextKey].ir||[]));
+    expRows=JSON.parse(JSON.stringify(drafts[nextKey].er||[]));
+  }else{
+    incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
+    expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
+  }
+  lastDraftJSON=JSON.stringify({ir:incRows,er:expRows});
+  toast(savedMo+' '+savedYr+' closed \u2192 loan balances updated');
+  render();
 }
+/* Legacy alias for backward compat with any cached references */
+function saveMo(){closeMonth();}
 
 function delMo(key){
   var entry=null;for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===key){entry=finHistory[i];break;}}
@@ -608,7 +838,51 @@ function ldMo(key){
   if(!e)return;
   incRows=JSON.parse(JSON.stringify(e.ir));expRows=JSON.parse(JSON.stringify(e.er));
   selM=parseInt(key.split('-')[1],10);selY=parseInt(key.split('-')[0],10);
-  render();window.scrollTo({top:0,behavior:'smooth'});toast('Loaded '+e.mo+' '+e.yr);
+  render();window.scrollTo({top:0,behavior:'smooth'});toast('Loaded '+e.mo+' '+e.yr+' (read-only view)');
+}
+
+function reopenMonth(key){
+  /* Symmetric undo of closeMonth: restore loan balances from snapshot,
+     remove from finHistory, write draft back, switch to that month. */
+  var e=null;for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===key){e=finHistory[i];break;}}
+  if(!e)return;
+  if(!e.loanBalancesBefore){
+    if(!confirm('This month was closed before loan tracking existed. Reopening will move it back to a draft but loan balances cannot be reversed automatically.\n\nContinue?'))return;
+  }else{
+    if(!confirm('Reopen '+e.mo+' '+e.yr+'?\n\nLoan balances will be restored to their pre-close values. The month becomes an editable draft.'))return;
+  }
+  /* Restore loan balances if snapshot exists */
+  if(e.loanBalancesBefore){
+    Object.keys(e.loanBalancesBefore).forEach(function(loanId){
+      var l=findLoanById(loanId);
+      if(l){
+        l.balance=e.loanBalancesBefore[loanId];
+        /* Roll back the installment decrement */
+        if(typeof l.inst==='number')l.inst=l.inst+1;
+        /* If loan was archived because it hit 0, unarchive it */
+        if(l.archived&&l.balance>0)l.archived=false;
+      }else{
+        /* Loan was deleted from array entirely \u2014 recreate it as archived */
+        /* (We don't usually delete, only archive, so this is defensive) */
+      }
+    });
+    lsSet(SK.l,loans);
+  }
+  /* Restore as draft */
+  drafts=drafts||{};
+  drafts[key]={ir:e.ir,er:e.er};
+  lsSet(SK.d,drafts);
+  /* Remove from finalized history */
+  finHistory=finHistory.filter(function(h){return h.key!==key;});
+  lsSet(SK.h,finHistory);
+  /* Switch to that month and load into edit state */
+  selM=parseInt(key.split('-')[1],10);
+  selY=parseInt(key.split('-')[0],10);
+  incRows=JSON.parse(JSON.stringify(e.ir));
+  expRows=JSON.parse(JSON.stringify(e.er));
+  lastDraftJSON=JSON.stringify({ir:incRows,er:expRows});
+  render();window.scrollTo({top:0,behavior:'smooth'});
+  toast(e.mo+' '+e.yr+' reopened \u2014 loan balances restored');
 }
 
 function rHist(){
@@ -624,7 +898,8 @@ function rHist(){
     if(h.er&&h.er.length){var best=h.er.reduce(function(a,b){return(a.amt||0)>(b.amt||0)?a:b;});topExp=best.lbl||'--';}
     html+='<div class="hi"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
       +'<span style="font-weight:700;font-size:14px">'+esc(h.mo)+' '+h.yr+'</span>'
-      +'<div style="display:flex;gap:6px"><button class="btn sm" style="flex:none" onclick="ldMo(\''+esc(h.key)+'\')">Load</button>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm" style="flex:none" onclick="ldMo(\''+esc(h.key)+'\')">Load</button>'
+      +'<button class="btn sm" style="flex:none" onclick="reopenMonth(\''+esc(h.key)+'\')" title="Restore loan balances and edit">\u21b6 Reopen</button>'
       +'<button class="xbtn" onclick="delMo(\''+esc(h.key)+'\')" aria-label="Delete">\u2715</button></div></div>'
       +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px"><span class="bdg '+bc+'">'+fmtS(h.balance)+'</span><span class="bdg '+bc+'">'+h.rate.toFixed(1)+'% saved</span></div>'
       +'<div style="font-size:12px;color:var(--tm)">In: '+fmtE(h.income)+' | Out: '+fmtE(h.expenses)+' | Top: '+esc(topExp)+'</div>'
@@ -658,12 +933,13 @@ function drawCat(over){
 function rAdvisor(root){
   var ni=totalBaseIncome(),hasH=finHistory.length>0;
   var avgExp=hasH?Math.round(finHistory.reduce(function(s,h){return s+h.expenses;},0)/finHistory.length):0;
-  var td=loans.reduce(function(s,l){return s+(l.balance||0);},0);
+  var act=activeLoans();
+  var td=act.reduce(function(s,l){return s+(l.balance||0);},0);
   var nb=hasH?ni-avgExp:null,efTarget=hasH?avgExp*3:0;
   var loanPmt=totalLoanPayments();
   var discr=Math.max(0,ni-loanPmt);
-  /* Highest-rate loan for priority targeting */
-  var topLoan=loans.reduce(function(a,b){return(a.rate||0)>=(b.rate||0)?a:b;});
+  /* Highest-rate active loan for priority targeting */
+  var topLoan=act.length?act.reduce(function(a,b){return(a.rate||0)>=(b.rate||0)?a:b;}):{name:'No active loan',rate:0,balance:0};
   var recInvest=Math.round(discr*0.15),recSave=Math.round(discr*0.25),recExtra=Math.round(discr*0.10);
   var planCost=recInvest+recSave+recExtra;
   var feasible=nb!==null?nb>=planCost:null;
@@ -719,35 +995,87 @@ function updIncSrc(i,field,v){
    TAB 3 — LOANS
 ══════════════════════════════════════════════ */
 function rLoans(root){
-  var td=loans.reduce(function(s,l){return s+(l.balance||0);},0),html='<div class="lbl">Your loans</div>';
-  loans.forEach(function(l,i){
-    var pmt=monthlyPmt(l.balance||0,l.rate||0,l.inst||0);
-    var mi=(l.balance*(l.rate/100))/12,pct=td>0?Math.round((l.balance/td)*100):0,hi=l.rate>=5;
-    html+='<div class="lcard"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
-      +'<input type="text" value="'+esc(l.name)+'" oninput="updLName('+i+',this.value)" style="font-size:15px;font-weight:700;border:none;background:transparent;color:var(--tx);font-family:inherit;flex:1;min-width:0"/>'
-      +'<div style="background:'+(hi?'var(--rl)':'var(--gll)')+';color:'+(hi?'var(--rd)':'var(--gray)')+';font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;flex-shrink:0">'+l.rate+'%</div></div>'
-      +'<div class="g2" style="margin-bottom:8px">'+lf('Balance ('+EUR+')','balance',l.balance,i,false)+lf('Interest (%)','rate',l.rate,i,true)+lf('Monthly ('+EUR+')','monthly',l.monthly,i,false)+lf('Installments left','inst',l.inst,i,false)+'</div>'
-      +'<div style="font-size:11px;color:var(--tm)">Est. monthly payment: <strong style="color:var(--red)">'+fmtE(pmt)+'</strong> | Monthly interest: <strong style="color:var(--rd)">'+fmtE(mi)+'</strong></div>'
-      +'<div class="pb"><div class="pf" style="width:'+pct+'%;background:'+(hi?'#E60000':'#A32D2D')+'"></div></div>'
-      +'<div style="font-size:10px;color:var(--tm);margin-top:2px">'+pct+'% of total debt</div>'
-      +(hi?'<div style="margin-top:8px;background:var(--rl);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--rd)">Rate above 5% — overpaying saves significant interest</div>':'')+'</div>';
-  });
+  var active=activeLoans(),archived=archivedLoans();
+  var td=active.reduce(function(s,l){return s+(l.balance||0);},0);
+  var html='<div class="lbl">Your loans</div>';
+
+  if(active.length===0){
+    html+='<div class="card" style="text-align:center;padding:20px;color:var(--tm);font-size:13px">No active loans. Tap "+ Add loan" below to add one.</div>';
+  }else{
+    active.forEach(function(l){
+      var pmt=monthlyPmt(l.balance||0,l.rate||0,l.inst||0);
+      var mi=(l.balance*(l.rate/100))/12,pct=td>0?Math.round((l.balance/td)*100):0;
+      var hi=l.rate>=5,paidOff=l.balance===0;
+      /* Last 3 payments for this loan from finHistory */
+      var history=[];
+      for(var i=0;i<finHistory.length&&history.length<3;i++){
+        var h=finHistory[i];
+        if(h.loanAmortization&&h.loanAmortization[l.id])history.push({mo:h.mo,yr:h.yr,a:h.loanAmortization[l.id]});
+      }
+      html+='<div class="lcard"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">'
+        +'<input type="text" value="'+esc(l.name)+'" oninput="updLName(\''+esc(l.id)+'\',this.value)" style="font-size:15px;font-weight:700;border:none;background:transparent;color:var(--tx);font-family:inherit;flex:1;min-width:0"/>'
+        +(paidOff?'<span class="paidoff-badge">PAID OFF</span>':'')
+        +'<div style="background:'+(hi?'var(--rl)':'var(--gll)')+';color:'+(hi?'var(--rd)':'var(--gray)')+';font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;flex-shrink:0">'+l.rate+'%</div>'
+        +'<button class="xbtn" onclick="archiveLoan(\''+esc(l.id)+'\')" aria-label="Archive" title="Archive">\u2715</button></div>'
+        +'<div class="g2" style="margin-bottom:8px">'+lf2('Balance ('+EUR+')','balance',l.balance,l.id,false)+lf2('Interest (%)','rate',l.rate,l.id,true)+lf2('Monthly ('+EUR+')','monthly',l.monthly,l.id,false)+lf2('Installments left','inst',l.inst,l.id,false)+'</div>'
+        +'<div style="font-size:11px;color:var(--tm)">Est. monthly payment: <strong style="color:var(--red)">'+fmtE(pmt)+'</strong> | Monthly interest at current balance: <strong style="color:var(--rd)">'+fmtE(mi)+'</strong></div>'
+        +'<div class="pb"><div class="pf" style="width:'+pct+'%;background:'+(hi?'#E60000':'#A32D2D')+'"></div></div>'
+        +'<div style="font-size:10px;color:var(--tm);margin-top:2px">'+pct+'% of total debt</div>'
+        +(hi?'<div style="margin-top:8px;background:var(--rl);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--rd)">Rate above 5% \u2014 overpaying saves significant interest</div>':'');
+      /* Recent payments mini-history */
+      if(history.length){
+        html+='<div style="margin-top:10px;padding-top:8px;border-top:.5px solid var(--br)"><div style="font-size:10px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Recent payments</div>';
+        history.forEach(function(p){
+          html+='<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tm);margin-bottom:3px;line-height:1.4">'
+            +'<span>'+esc(p.mo)+' '+p.yr+'</span>'
+            +'<span><strong style="color:var(--tx)">'+fmtE(p.a.paid)+'</strong> = <span style="color:var(--rd)">'+fmtE(p.a.interest)+' int</span> + <span style="color:var(--green)">'+fmtE(p.a.principal)+' prin</span></span></div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+  }
+
+  html+='<button class="addbtn" onclick="addLoanBtn()" style="margin-bottom:12px">+ Add loan</button>';
+
+  if(archived.length){
+    html+='<div class="lbl" style="margin-top:14px">Archived loans</div><div class="loan-archived">';
+    archived.forEach(function(l){
+      html+='<div class="lcard"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:14px">'+esc(l.name)+'</span><button class="btn sm" style="flex:none" onclick="unarchiveLoan(\''+esc(l.id)+'\');render();">Restore</button></div><div style="font-size:11px;color:var(--tm);margin-top:4px">Balance: '+fmtE(l.balance)+' \u00b7 Rate: '+l.rate+'%</div></div>';
+    });
+    html+='</div>';
+  }
+
   var totalPmt=totalLoanPayments();
-  html+='<div class="disc">Total estimated monthly payments: <strong>'+fmtE(totalPmt)+'</strong></div>'
-    +'<div class="card"><div class="lbl" style="margin-bottom:8px">Debt breakdown</div><div class="cw"><canvas id="dbtC" role="img" aria-label="Debt breakdown"></canvas></div></div>';
+  html+='<div class="disc">Total estimated monthly payments (active loans): <strong>'+fmtE(totalPmt)+'</strong></div>';
+
+  if(active.length){
+    html+='<div class="card"><div class="lbl" style="margin-bottom:8px">Debt breakdown</div><div class="cw"><canvas id="dbtC" role="img" aria-label="Debt breakdown"></canvas></div></div>';
+  }
   root.innerHTML=html;
-  mkChart('dbtC',{type:'doughnut',data:{labels:loans.map(function(l){return l.name;}),datasets:[{data:loans.map(function(l){return l.balance||0;}),backgroundColor:['#E60000','#A32D2D','#6A6A6A'],borderWidth:2,borderColor:isDark()?'#2a2a2a':'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{labels:{color:isDark()?'#f0f0f0':'#1a1a1a',font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return' '+ctx.label+': '+fmtE(ctx.parsed);}}}}}});
+
+  if(active.length){
+    mkChart('dbtC',{type:'doughnut',data:{labels:active.map(function(l){return l.name;}),datasets:[{data:active.map(function(l){return l.balance||0;}),backgroundColor:active.map(function(_,i){return COLORS[i%COLORS.length];}),borderWidth:2,borderColor:isDark()?'#2a2a2a':'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{labels:{color:isDark()?'#f0f0f0':'#1a1a1a',font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return' '+ctx.label+': '+fmtE(ctx.parsed);}}}}}});
+  }
 }
-function lf(lbl,field,val,i,isStep){
-  /* Decimal precision: rate (isStep), balance and monthly all accept 0.01 step.
-     Only 'inst' (installments) stays integer since you can't have fractional installments. */
+
+function addLoanBtn(){addLoan();render();toast('Loan added \u2014 fill in the details');}
+
+function lf2(lbl,field,val,loanId,isStep){
   var step=(isStep||field==='balance'||field==='monthly')?' step="0.01"':' step="1"';
   var imode=field==='inst'?'numeric':'decimal';
-  return'<div style="background:var(--gll);border-radius:6px;padding:8px"><div style="font-size:10px;color:var(--tm);margin-bottom:3px">'+lbl+'</div><input class="ie" type="number"'+step+' inputmode="'+imode+'" min="0"'+(field==='rate'?' max="50"':'')+' value="'+(val||0)+'" onfocus="if(parseFloat(this.value)===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=\'0\'" oninput="updL('+i+',\''+field+'\',this.value)"/></div>';
+  return'<div style="background:var(--gll);border-radius:6px;padding:8px"><div style="font-size:10px;color:var(--tm);margin-bottom:3px">'+lbl+'</div><input class="ie" type="number"'+step+' inputmode="'+imode+'" min="0"'+(field==='rate'?' max="50"':'')+' value="'+(val||0)+'" onfocus="if(parseFloat(this.value)===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=\'0\'" oninput="updL2(\''+loanId+'\',\''+field+'\',this.value)"/></div>';
 }
-function updL(i,f,v){var n=f==='rate'?clamp(v,0,50):Math.max(0,parseFloat(v)||0);loans[i][f]=n;loanDebounce();}
-function updLName(i,v){loans[i].name=v;loanDebounce();}
+
+function updL2(id,f,v){
+  var l=findLoanById(id);if(!l)return;
+  var n=f==='rate'?clamp(v,0,50):Math.max(0,parseFloat(v)||0);
+  l[f]=n;
+  loanDebounce();
+  /* If balance was edited and loan was paid off (balance=0) and now has balance, unarchive nothing \u2014 keep status as-is */
+}
+function updLName(id,v){var l=findLoanById(id);if(!l)return;l.name=v;loanDebounce();}
 
 /* ══════════════════════════════════════════════
    TAB 4 — ANALYSIS
@@ -773,7 +1101,9 @@ function rAnalysis(root){
    TAB 5 — ACTION PLAN
 ══════════════════════════════════════════════ */
 function rAction(root){
-  var last=finHistory[0]||null,topLoan=loans.reduce(function(a,b){return(a.rate||0)>=(b.rate||0)?a:b;});
+  var last=finHistory[0]||null;
+  var act=activeLoans();
+  var topLoan=act.length?act.reduce(function(a,b){return(a.rate||0)>=(b.rate||0)?a:b;}):{name:'No active loan',rate:0,balance:0};
   var ni=totalBaseIncome(),loanPmt=totalLoanPayments(),discr=Math.max(0,ni-loanPmt);
   var recInvest=Math.round(discr*0.15),recSave=Math.round(discr*0.25),recExtra=Math.round(discr*0.10);
   var dining=0;if(last&&last.er)last.er.forEach(function(r){if(r.lbl==='Night out'||r.lbl==='Take-Out food')dining+=(r.amt||0);});
@@ -797,7 +1127,7 @@ function rInvest(root){
   var ni=totalBaseIncome();
   var loanPmt=totalLoanPayments();
   var discr=Math.max(0,ni-loanPmt);
-  var totalDebt=loans.reduce(function(s,l){return s+(l.balance||0);},0);
+  var totalDebt=activeLoans().reduce(function(s,l){return s+(l.balance||0);},0);
 
   /* ── Three investment tiers, all debt-aware ── */
   /* Minimum: 10% of discretionary */
@@ -859,7 +1189,7 @@ function rInvest(root){
 
   /* Debt priority */
   html+='<div class="alert" style="margin-bottom:12px"><strong style="display:block;margin-bottom:4px">⚠ Active debt — pay in this order (highest rate first):</strong>';
-  var sortedLoans=loans.slice().sort(function(a,b){return(b.rate||0)-(a.rate||0);});
+  var sortedLoans=activeLoans().slice().sort(function(a,b){return(b.rate||0)-(a.rate||0);});
   sortedLoans.forEach(function(l,i){
     if(!l.balance)return;
     var pmt=monthlyPmt(l.balance,l.rate,l.inst);
@@ -954,28 +1284,34 @@ function rSettings(root){
   root.innerHTML='<div class="lbl">Data management</div>'
     +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Export backup</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">Download all data as JSON. Back up or transfer to a new device.</div><button class="btn g" onclick="exportData()">Download backup (.json)</button></div>'
     +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Import backup</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">Restore from a previously exported JSON file. Replaces all current data.</div><button class="btn" onclick="importData()">Import from file</button></div>'
-    +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Storage usage</div>'+storageInfo()+'<div style="font-size:12px;color:var(--tm);margin-top:8px">'+finHistory.length+' months | '+Object.keys(notes).length+' notes</div></div>'
+    +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Storage usage</div>'+storageInfo()+'<div style="font-size:12px;color:var(--tm);margin-top:8px">'+finHistory.length+' months finalized | '+Object.keys(drafts||{}).length+' drafts | '+Object.keys(notes).length+' notes</div></div>'
     +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Reset all data</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">Permanently delete everything. Export first.</div><button class="btn d" onclick="resetAll()">Reset all data</button></div>'
-    +'<div class="disc" style="margin-top:4px">Version 11 | Data stored locally in your browser. Export regularly.</div>';
+    +'<div class="disc" style="margin-top:4px">Version 12 | Autosave + cross-tab sync + crash recovery. Data stored locally in your browser. Export regularly.</div>';
 }
 function resetAll(){
   if(!confirm('Delete ALL data? Export a backup first.'))return;
   if(!confirm('Are you sure? Cannot be undone.'))return;
-  [SK.h,SK.l,SK.s,SK.n].forEach(function(k){localStorage.removeItem(k);});
+  [SK.h,SK.l,SK.s,SK.n,SK.d].forEach(function(k){localStorage.removeItem(k);});
+  lastDraftJSON='';
   loadState();incRows=[];expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});curTab='Budget';render();toast('All data reset');
 }
 
-/* Pre-fill incRows on first load — either from saved month or from cfg.incSources */
+/* Pre-fill incRows on first load.
+   Priority: draft > finalized history > cfg.incSources fallback */
 function initRowsForCurrentMonth(){
   var key=curKey(),saved=null;
   for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===key){saved=finHistory[i];break;}}
   if(saved){
     incRows=JSON.parse(JSON.stringify(saved.ir));
     expRows=JSON.parse(JSON.stringify(saved.er));
+  }else if(drafts&&drafts[key]){
+    incRows=JSON.parse(JSON.stringify(drafts[key].ir||[]));
+    expRows=JSON.parse(JSON.stringify(drafts[key].er||[]));
   }else{
     incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
     expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
   }
+  lastDraftJSON=JSON.stringify({ir:incRows,er:expRows});
 }
 
 /* ══════════════════════════════════════════════
