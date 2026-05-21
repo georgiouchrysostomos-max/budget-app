@@ -144,7 +144,7 @@ var TABS=['Budget','Advisor','Loans','Analysis','Action Plan','Investments','Set
 var DEFEXP=['Loan payments','Groceries','Electricity','Take-Out food','Water bill','Night out','Various'];
 var DEFLOAN=[{name:'Loan 1',balance:0,rate:0,inst:0,monthly:0},{name:'Loan 2',balance:0,rate:0,inst:0,monthly:0},{name:'Loan 3',balance:0,rate:0,inst:0,monthly:0}];
 var TARGETS={'Loan payments':0,'Groceries':300,'Electricity':120,'Take-Out food':100,'Water bill':50,'Night out':200,'Various':150};
-var SK={h:'fh5',l:'fl5',s:'fs5',n:'fn5'};
+var SK={h:'fh5',l:'fl5',s:'fs5',n:'fn5',d:'fd5'};
 var QA=[
   {q:'Why S&P 500 over a global fund?',a:'Buffett says put 90% in a low-cost S&P 500 index fund. US companies already generate 40-60% of revenues internationally — global exposure without extra cost. CSPX charges 0.07% vs VWCE at 0.22%. Over 30 years, that difference costs tens of thousands of euros.'},
   {q:'What does Buffett say about market timing?',a:'"The stock market is a device for transferring money from the impatient to the patient." Buy on the 20th every month regardless of market conditions. In a downturn you buy more shares for the same money — this is a feature, not a bug.'},
@@ -176,7 +176,7 @@ function migrate(){
   }
 }
 
-var finHistory,loans,cfg,notes;
+var finHistory,loans,cfg,notes,drafts;
 function loadState(){
   migrate();
   finHistory=lsGet(SK.h,[]);
@@ -187,6 +187,13 @@ function loadState(){
   else cfg=rc;
   if(!Array.isArray(cfg.incSources)||cfg.incSources.length===0){cfg.incSources=[{lbl:'Salary',amt:0},{lbl:'Other income',amt:0}];lsSet(SK.s,cfg);}
   notes=lsGet(SK.n,{});
+  drafts=lsGet(SK.d,{});
+  /* Clean up orphaned drafts: if a finalized entry exists for the same key, drop the draft */
+  var changed=false;
+  Object.keys(drafts).forEach(function(k){
+    for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===k){delete drafts[k];changed=true;break;}}
+  });
+  if(changed)lsSet(SK.d,drafts);
 }
 
 var incRows=[],expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
@@ -968,6 +975,88 @@ function initRowsForCurrentMonth(){
   }else{
     incRows=(cfg.incSources||[]).map(function(s){return{lbl:s.lbl,amt:s.amt};});
     expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});
+  }
+}
+
+/* ══════════════════════════════════════════════
+   AUTOSAVE ENGINE
+   - Drafts saved per-month under SK.d (keyed YYYY-MM)
+   - Debounced 400ms during typing
+   - Flushed synchronously on visibilitychange / pagehide
+   - Cross-tab sync via storage event
+══════════════════════════════════════════════ */
+var saveStatusT=null;
+var lastDraftJSON='';
+
+function setSaveStatus(state,msg){
+  var el=document.getElementById('saveStatus');if(!el)return;
+  el.className='savestatus '+state;
+  el.textContent=msg||'';
+  if(state==='saved'){
+    clearTimeout(saveStatusT);
+    saveStatusT=setTimeout(function(){el.className='savestatus';el.textContent='';},1500);
+  }
+}
+
+function saveDraft(silent){
+  /* Persist current incRows/expRows under drafts[currentKey].
+     Skip if data is identical to last saved draft (avoids redundant writes). */
+  if(!incRows&&!expRows)return;
+  var key=curKey();
+  var payload={ir:incRows||[],er:expRows||[]};
+  var json=JSON.stringify(payload);
+  if(json===lastDraftJSON)return;
+  if(!silent)setSaveStatus('saving','Saving...');
+  try{
+    drafts=drafts||{};
+    drafts[key]=payload;
+    lsSet(SK.d,drafts);
+    lastDraftJSON=json;
+    if(!silent)setTimeout(function(){setSaveStatus('saved','\u2713 Saved');},120);
+  }catch(e){
+    setSaveStatus('error','\u26a0 Save failed');
+    toast('Storage full \u2014 export a backup');
+  }
+}
+
+function flushDraft(){
+  /* Synchronous immediate save for unload events. No debounce, no UI update. */
+  clearTimeout(debT);
+  saveDraft(true);
+}
+
+function clearDraft(key){
+  if(!drafts)return;
+  if(drafts[key]){delete drafts[key];lsSet(SK.d,drafts);}
+  lastDraftJSON='';
+}
+
+/* Cross-tab sync: when another tab modifies storage, refresh in-memory state.
+   Skip if user is actively typing (any input has focus) — last-write-wins-locally. */
+function onStorageEvent(e){
+  if(!e.key)return;
+  var active=document.activeElement;
+  var userTyping=active&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA');
+  if(userTyping)return;
+  if(e.key===SK.d){
+    drafts=lsGet(SK.d,{});
+    var key=curKey();
+    if(drafts[key]&&curTab==='Budget'){
+      incRows=JSON.parse(JSON.stringify(drafts[key].ir||[]));
+      expRows=JSON.parse(JSON.stringify(drafts[key].er||[]));
+      lastDraftJSON=JSON.stringify({ir:incRows,er:expRows});
+      render();
+      toast('Updated from another tab');
+    }
+  }else if(e.key===SK.h){
+    finHistory=lsGet(SK.h,[]);
+    if(curTab==='Budget'||curTab==='Analysis'||curTab==='Action Plan')render();
+  }else if(e.key===SK.l){
+    loans=lsGet(SK.l,DEFLOAN);
+    if(curTab==='Loans'||curTab==='Advisor'||curTab==='Investments')render();
+  }else if(e.key===SK.s){
+    cfg=lsGet(SK.s,cfg);
+    var hs=document.getElementById('hsub');if(hs)hs.textContent=MO[selM]+' '+selY+' | Base '+fmtE(totalBaseIncome())+'/mo';
   }
 }
 
