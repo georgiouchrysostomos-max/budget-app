@@ -114,6 +114,42 @@ select{font-size:14px;padding:7px 10px;border-radius:var(--rs);border:.5px solid
 .qa-btn{width:100%;text-align:left;background:var(--gll);border:none;border-radius:var(--rs);padding:10px 12px;font-size:13px;font-weight:600;color:var(--tx);cursor:pointer;font-family:inherit;line-height:1.4;margin-bottom:2px}
 .qa-ans{display:none;background:var(--bg);border-radius:0 0 var(--rs) var(--rs);padding:10px 12px;font-size:12px;color:var(--tm);line-height:1.6;border:.5px solid var(--br);border-top:none;margin-bottom:8px}
 hr.dv{border:none;border-top:.5px solid var(--br);margin:10px 0}
+/* Insights strip */
+.insight{background:linear-gradient(135deg,var(--gl),var(--gll));border:.5px solid var(--green);border-radius:var(--rs);padding:9px 12px;margin-bottom:12px;font-size:12px;color:var(--tx);display:flex;align-items:center;gap:8px;line-height:1.4}
+.insight .ic{font-size:16px;flex-shrink:0}
+.insight .dx{margin-left:auto;background:none;border:none;color:var(--tm);font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px}
+/* Celebration overlay */
+.celebrate{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .3s ease}
+.celebrate.on{opacity:1;pointer-events:auto}
+.celebrate-card{background:var(--sf);border-radius:18px;padding:28px 24px;max-width:300px;text-align:center;transform:scale(.8);transition:transform .35s cubic-bezier(.2,1.4,.4,1);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.celebrate.on .celebrate-card{transform:scale(1)}
+.celebrate-emoji{font-size:54px;margin-bottom:10px;animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.celebrate-title{font-size:19px;font-weight:700;margin-bottom:6px;color:var(--tx)}
+.celebrate-sub{font-size:13px;color:var(--tm);margin-bottom:18px;line-height:1.5}
+.celebrate-btn{background:var(--red);color:#fff;border:none;border-radius:var(--rs);padding:11px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.confetti{position:fixed;width:9px;height:9px;top:-10px;z-index:301;pointer-events:none;border-radius:1px}
+/* Odometer */
+.odo{background:#1a1a1a;color:#fff;border-radius:var(--rs);padding:14px;text-align:center;margin-bottom:12px}
+.odo-label{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.odo-val{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px;color:#E60000}
+.odo-sub{font-size:11px;opacity:.6;margin-top:4px}
+/* Decide tab */
+.decide-input{width:100%;font-size:18px;font-weight:600;padding:11px 14px;border-radius:var(--rs);border:.5px solid var(--br);background:var(--bg);color:var(--tx);font-family:inherit}
+.decide-out{display:flex;flex-direction:column;gap:8px}
+.decide-row{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-radius:var(--rs);font-size:13px}
+.decide-row.debt{background:var(--rl)}
+.decide-row.invest{background:var(--gl)}
+.decide-big{font-size:17px;font-weight:700}
+/* Sankey flow */
+.sankey{display:flex;flex-direction:column;gap:3px}
+.sankey-row{display:flex;align-items:center;height:34px;border-radius:5px;color:#fff;font-size:12px;font-weight:600;padding:0 10px;overflow:hidden;white-space:nowrap;transition:width .5s ease}
+/* Time machine */
+.tm-slider{width:100%;accent-color:#E60000;margin:10px 0}
+/* Streak */
+.streak{display:flex;align-items:center;gap:8px;background:var(--gll);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;font-size:12px}
+.streak .fire{font-size:18px}
+.guard-cap{font-size:11px;padding:5px 8px;border-radius:6px;border:.5px solid var(--br);background:var(--bg);color:var(--tx);width:90px;font-family:inherit}
 /* Investment tier cards */
 .tier{border-radius:var(--rs);padding:12px 14px;border:.5px solid var(--br);background:var(--sf);margin-bottom:10px}
 .tier.min{border-left:4px solid var(--gray)}
@@ -146,15 +182,16 @@ hr.dv{border:none;border-top:.5px solid var(--br);margin:10px 0}
 <div class="tabs" id="tabbar"></div>
 <div class="pg" id="root"></div>
 <div class="toast" id="tst"></div>
+<div class="celebrate" id="celebrate"><div class="celebrate-card"><div class="celebrate-emoji" id="cel-emoji">🎉</div><div class="celebrate-title" id="cel-title"></div><div class="celebrate-sub" id="cel-sub"></div><button class="celebrate-btn" onclick="closeCelebrate()">Let's go</button></div></div>
 <script>
 var EUR='\u20ac';
 var COLORS=['#E60000','#6A6A6A','#838383','#ACACAC','#993C1D','#444441','#A32D2D','#185FA5','#0F6E56','#D6D6D6'];
 var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var TABS=['Budget','Advisor','Loans','Payoff','Analysis','Action Plan','Investments','Settings'];
+var TABS=['Budget','Advisor','Loans','Payoff','Decide','Analysis','Action Plan','Investments','Settings'];
 var DEFEXP=['Groceries','Electricity','Take-Out food','Water bill','Night out','Various'];
 var DEFLOAN=[{id:'L-1',name:'Loan 1',balance:0,rate:0,inst:0,monthly:0,archived:false},{id:'L-2',name:'Loan 2',balance:0,rate:0,inst:0,monthly:0,archived:false},{id:'L-3',name:'Loan 3',balance:0,rate:0,inst:0,monthly:0,archived:false}];
 var TARGETS={'Groceries':300,'Electricity':120,'Take-Out food':100,'Water bill':50,'Night out':200,'Various':150};
-var SK={h:'fh5',l:'fl5',s:'fs5',n:'fn5',d:'fd5'};
+var SK={h:'fh5',l:'fl5',s:'fs5',n:'fn5',d:'fd5',m:'fm5',g:'fg5'};
 var QA=[
   {q:'Why S&P 500 over a global fund?',a:'Buffett says put 90% in a low-cost S&P 500 index fund. US companies already generate 40-60% of revenues internationally — global exposure without extra cost. CSPX charges 0.07% vs VWCE at 0.22%. Over 30 years, that difference costs tens of thousands of euros.'},
   {q:'What does Buffett say about market timing?',a:'"The stock market is a device for transferring money from the impatient to the patient." Buy on the 20th every month regardless of market conditions. In a downturn you buy more shares for the same money — this is a feature, not a bug.'},
@@ -186,7 +223,7 @@ function migrate(){
   }
 }
 
-var finHistory,loans,cfg,notes,drafts;
+var finHistory,loans,cfg,notes,drafts,achieved,guardrails;
 function loadState(){
   migrate();
   finHistory=lsGet(SK.h,[]);
@@ -198,8 +235,10 @@ function loadState(){
   if(!Array.isArray(cfg.incSources)||cfg.incSources.length===0){cfg.incSources=[{lbl:'Salary',amt:0},{lbl:'Other income',amt:0}];lsSet(SK.s,cfg);}
   notes=lsGet(SK.n,{});
   drafts=lsGet(SK.d,{});
+  achieved=lsGet(SK.m,{});      /* milestones already celebrated */
+  guardrails=lsGet(SK.g,{});    /* per-category spending caps */
   migrateLoans();
-  /* Clean up orphaned drafts: if a finalized entry exists for the same key, drop the draft */
+  /* Clean up orphaned drafts */
   var changed=false;
   Object.keys(drafts).forEach(function(k){
     for(var i=0;i<finHistory.length;i++){if(finHistory[i].key===k){delete drafts[k];changed=true;break;}}
@@ -344,7 +383,7 @@ function reconcileLoanRows(){
 
 /* ── Export / Import / Settings ── */
 function exportData(){
-  var blob=new Blob([JSON.stringify({version:12,exported:new Date().toISOString(),history:finHistory,loans:loans,settings:cfg,notes:notes,drafts:drafts},null,2)],{type:'application/json'});
+  var blob=new Blob([JSON.stringify({version:14,exported:new Date().toISOString(),history:finHistory,loans:loans,settings:cfg,notes:notes,drafts:drafts,achieved:achieved,guardrails:guardrails},null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='finance-backup-'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('Exported');
@@ -359,11 +398,11 @@ function importData(){
         var d=JSON.parse(ev.target.result);
         if(!d.history||!Array.isArray(d.history))throw new Error('Invalid file');
         if(!confirm('Import replaces all data. Continue?'))return;
-        finHistory=d.history||[];loans=d.loans||DEFLOAN;notes=d.notes||{};drafts=d.drafts||{};
+        finHistory=d.history||[];loans=d.loans||DEFLOAN;notes=d.notes||{};drafts=d.drafts||{};achieved=d.achieved||{};guardrails=d.guardrails||{};
         if(d.settings&&d.settings.incSources)cfg=d.settings;
         else if(d.settings)cfg={incSources:[{lbl:'Salary',amt:d.settings.sal||d.settings.normalIncome||0},{lbl:d.settings.otherLbl||'Other income',amt:d.settings.other||0}]};
         else cfg={incSources:[{lbl:'Salary',amt:0},{lbl:'Other income',amt:0}]};
-        lsSet(SK.h,finHistory);lsSet(SK.l,loans);lsSet(SK.s,cfg);lsSet(SK.n,notes);lsSet(SK.d,drafts);
+        lsSet(SK.h,finHistory);lsSet(SK.l,loans);lsSet(SK.s,cfg);lsSet(SK.n,notes);lsSet(SK.d,drafts);lsSet(SK.m,achieved);lsSet(SK.g,guardrails);
         render();toast('Imported — '+finHistory.length+' months restored');
       }catch(err){toast('Import failed: '+err.message);}
     };
@@ -388,6 +427,7 @@ function render(){
   else if(curTab==='Advisor')rAdvisor(root);
   else if(curTab==='Loans')rLoans(root);
   else if(curTab==='Payoff')rPayoff(root);
+  else if(curTab==='Decide')rDecide(root);
   else if(curTab==='Analysis')rAnalysis(root);
   else if(curTab==='Action Plan')rAction(root);
   else if(curTab==='Investments')rInvest(root);
@@ -824,7 +864,10 @@ function closeMonth(){
   }
   lastDraftJSON=JSON.stringify({ir:incRows,er:expRows});
   toast(savedMo+' '+savedYr+' closed \u2192 loan balances updated');
+  haptic(20);
   render();
+  /* Fire any milestone celebrations after the close */
+  setTimeout(checkMilestones,400);
 }
 /* Legacy alias for backward compat with any cached references */
 function saveMo(){closeMonth();}
@@ -1081,107 +1124,87 @@ function updLName(id,v){var l=findLoanById(id);if(!l)return;l.name=v;loanDebounc
 /* ══════════════════════════════════════════════
    TAB \u2014 PAYOFF FORECASTER (avalanche vs snowball)
 ══════════════════════════════════════════════ */
-var payoffExtra=100;  /* extra monthly payment, user-adjustable */
-var MONTH_CAP=600;    /* 50-year safety cap on simulations */
+var payoffExtras={};   /* {loanId: extraAmount} \u2014 per-loan extra payment */
+var payoffRollover=true; /* when a loan clears, cascade its payment to the next */
+var MONTH_CAP=600;
 
-/* Baseline minimum payment for a loan = its scheduled monthly payment.
-   Uses the 'monthly' field if set, otherwise the annuity estimate. */
+function getExtra(id){return parseFloat(payoffExtras[id])||0;}
+function totalExtra(){return activeLoans().reduce(function(s,l){return s+getExtra(l.id);},0);}
+
 function loanMinPayment(l){
   var m=parseFloat(l.monthly)||0;
   if(m>0)return m;
   return monthlyPmt(l.balance||0,l.rate||0,l.inst||0);
 }
 
-/* Simulate paying off a set of loans with a given strategy and extra payment.
-   strategy: 'avalanche' (highest rate first) or 'snowball' (smallest balance first).
-   Returns {months, totalInterest, totalPaid, perLoan:{id:{months,interest}}, schedule:[balanceTotal per month], neverPayoff:bool} */
-function simulatePayoff(loanList,extra,strategy){
-  /* Deep clone so we don't mutate real data */
+/* Simulate payoff with PER-LOAN extra payments.
+   Each loan pays min + its own extra. If rollover is on, a paid-off loan's
+   freed payment cascades to the highest-rate open loan. */
+function simulatePayoff(loanList,strategy){
   var L=loanList.filter(function(l){return (l.balance||0)>0;}).map(function(l){
-    return{id:l.id,name:l.name,balance:l.balance,rate:l.rate,min:loanMinPayment(l)};
+    return{id:l.id,name:l.name,balance:l.balance,rate:l.rate,min:loanMinPayment(l),extra:getExtra(l.id)};
   });
   if(L.length===0)return{months:0,totalInterest:0,totalPaid:0,perLoan:{},schedule:[],neverPayoff:false};
 
   var perLoan={};
   L.forEach(function(l){perLoan[l.id]={months:0,interest:0};});
-
-  var months=0,totalInterest=0,totalPaid=0,schedule=[];
-  var neverPayoff=false;
-
-  function targetOrder(){
-    var open=L.filter(function(l){return l.balance>0.005;});
-    if(strategy==='snowball')open.sort(function(a,b){return a.balance-b.balance;});
-    else open.sort(function(a,b){return (b.rate||0)-(a.rate||0);}); /* avalanche */
-    return open;
-  }
+  var months=0,totalInterest=0,totalPaid=0,schedule=[],neverPayoff=false;
 
   while(months<MONTH_CAP){
     var open=L.filter(function(l){return l.balance>0.005;});
     if(open.length===0)break;
 
-    /* Total budget this month = sum of all minimums + extra */
-    var budget=open.reduce(function(s,l){return s+l.min;},0)+extra;
-
-    /* 1) Apply interest to every open loan */
-    open.forEach(function(l){
-      var int=l.balance*(l.rate/100)/12;
-      l.balance+=int;
-      totalInterest+=int;
-      perLoan[l.id].interest+=int;
-    });
-
-    /* 2) Pay minimums on all (except we'll funnel extra to the target) */
-    var ordered=targetOrder();
-    /* Pay each loan its minimum; accumulate any leftover toward the target */
-    var remaining=budget;
-    /* First, pay minimum on every loan except target */
-    open.forEach(function(l){
-      if(l.id===ordered[0].id)return; /* skip target, handled last with extra */
-      var pay=Math.min(l.min,l.balance,remaining);
-      l.balance-=pay;remaining-=pay;totalPaid+=pay;
-    });
-    /* Then dump everything remaining on the target loan */
-    if(ordered[0]){
-      var t=ordered[0];
-      var pay=Math.min(remaining,t.balance);
-      t.balance-=pay;remaining-=pay;totalPaid+=pay;
+    /* Freed-up payment pool from paid-off loans (for rollover) */
+    var freedPool=0;
+    if(payoffRollover){
+      L.forEach(function(l){if(l.balance<=0.005)freedPool+=(l.min+l.extra);});
     }
 
-    /* Count months for loans still open */
-    open.forEach(function(l){if(l.balance>0.005)perLoan[l.id].months++;});
+    /* 1) Apply interest to open loans */
+    open.forEach(function(l){
+      var int=l.balance*(l.rate/100)/12;
+      l.balance+=int;totalInterest+=int;perLoan[l.id].interest+=int;
+    });
 
+    /* 2) Pay each open loan its min + own extra */
+    open.forEach(function(l){
+      var pay=Math.min(l.min+l.extra,l.balance);
+      l.balance-=pay;totalPaid+=pay;
+    });
+
+    /* 3) Rollover: dump freed pool onto highest-rate open loan(s) */
+    if(payoffRollover&&freedPool>0){
+      var order=open.filter(function(l){return l.balance>0.005;})
+        .sort(function(a,b){return strategy==='snowball'?(a.balance-b.balance):((b.rate||0)-(a.rate||0));});
+      for(var oi=0;oi<order.length&&freedPool>0.005;oi++){
+        var pay2=Math.min(freedPool,order[oi].balance);
+        order[oi].balance-=pay2;freedPool-=pay2;totalPaid+=pay2;
+      }
+    }
+
+    open.forEach(function(l){if(l.balance>0.005)perLoan[l.id].months++;});
     months++;
     var totalBal=L.reduce(function(s,l){return s+Math.max(0,l.balance);},0);
     schedule.push(Math.round(totalBal));
-
-    /* Detect non-amortizing situation: if total balance isn't decreasing, bail */
-    if(months>2&&schedule[months-1]>=schedule[months-2]&&extra<=0){
-      neverPayoff=true;break;
-    }
+    if(months>2&&schedule[months-1]>=schedule[months-2]&&totalExtra()<=0&&!payoffRollover){neverPayoff=true;break;}
   }
   if(months>=MONTH_CAP)neverPayoff=true;
-
   return{months:months,totalInterest:Math.round(totalInterest),totalPaid:Math.round(totalPaid),perLoan:perLoan,schedule:schedule,neverPayoff:neverPayoff};
 }
 
-function monthsToDate(m){
-  var d=new Date(selY,selM+m,1);
-  return MO[d.getMonth()].slice(0,3)+' '+d.getFullYear();
+function setLoanExtra(id,v){
+  payoffExtras[id]=Math.max(0,parseFloat(v)||0);
+  refreshPayoff();
 }
-function monthsToYM(m){
-  var y=Math.floor(m/12),mo=m%12;
-  if(y===0)return mo+' mo';
-  if(mo===0)return y+' yr';
-  return y+' yr '+mo+' mo';
+function toggleRollover(){
+  payoffRollover=!payoffRollover;
+  rPayoff(document.getElementById('root'));
 }
-
-function setPayoffExtra(v){
-  payoffExtra=Math.max(0,parseFloat(v)||0);
-  /* Live re-render of just the results, keep slider focus */
+function refreshPayoff(){
   var r=document.getElementById('payoff-results');
   if(r)r.innerHTML=payoffResultsHTML();
-  var sv=document.getElementById('payoff-extra-val');
-  if(sv)sv.textContent=fmtE(payoffExtra);
+  var t=document.getElementById('payoff-total-extra');
+  if(t)t.textContent=fmtE(totalExtra());
   drawPayoffChart();
 }
 
@@ -1189,60 +1212,42 @@ function payoffResultsHTML(){
   var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
   if(act.length===0)return'<div class="card" style="text-align:center;padding:20px;color:var(--tm)">No active loans with a balance. Nothing to forecast.</div>';
 
-  var ava=simulatePayoff(act,payoffExtra,'avalanche');
-  var sno=simulatePayoff(act,payoffExtra,'snowball');
-  var noExtra=simulatePayoff(act,0,'avalanche');
+  var ava=simulatePayoff(act,'avalanche');
+  /* Baseline: no extras at all */
+  var savedExtras=payoffExtras;payoffExtras={};
+  var noExtra=simulatePayoff(act,'avalanche');
+  payoffExtras=savedExtras;
 
   var interestSaved=noExtra.totalInterest-ava.totalInterest;
   var timeSaved=noExtra.months-ava.months;
-
   var html='';
 
-  /* Headline impact card */
-  if(payoffExtra>0&&!ava.neverPayoff&&!noExtra.neverPayoff){
+  if(totalExtra()>0&&!ava.neverPayoff&&!noExtra.neverPayoff){
     html+='<div class="card" style="background:var(--gl);border:.5px solid var(--green)">'
-      +'<div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">Impact of '+fmtE(payoffExtra)+'/month extra</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">Impact of '+fmtE(totalExtra())+'/month extra</div>'
       +'<div class="g2">'+met('Interest saved','pos',fmtE(interestSaved))+met('Time saved','pos',monthsToYM(timeSaved))+'</div>'
-      +'<div style="font-size:11px;color:var(--tm)">vs paying only minimums. Extra payments target the highest-rate loan first (avalanche).</div></div>';
+      +'<div style="font-size:11px;color:var(--tm)">vs paying only minimums.'+(payoffRollover?' Freed-up payments cascade to the next loan.':' Rollover off \u2014 each loan paid independently.')+'</div></div>';
   }
 
-  /* Avalanche vs Snowball comparison */
-  html+='<div class="lbl">Avalanche vs Snowball</div>';
-  html+='<div class="card tier rec" style="margin-bottom:8px;border-left:4px solid var(--red)">'
-    +'<div class="tier-hd"><span class="tier-tt" style="color:var(--red)">Avalanche \u2014 highest rate first</span><span class="tier-tg r">Least interest</span></div>'
-    +(ava.neverPayoff?'<div class="loan-helper warn">Loans never pay off at this payment level \u2014 increase the extra payment.</div>'
-      :'<div class="tier-row"><span>Debt-free in</span><strong>'+monthsToYM(ava.months)+' \u00b7 '+monthsToDate(ava.months)+'</strong></div>'
-       +'<div class="tier-row"><span>Total interest paid</span><strong class="r">'+fmtE(ava.totalInterest)+'</strong></div>')
-    +'</div>';
-  html+='<div class="card tier buf" style="border-left:4px solid var(--green)">'
-    +'<div class="tier-hd"><span class="tier-tt" style="color:var(--green)">Snowball \u2014 smallest balance first</span><span class="tier-tg g">Quick wins</span></div>'
-    +(sno.neverPayoff?'<div class="loan-helper warn">Loans never pay off at this payment level \u2014 increase the extra payment.</div>'
-      :'<div class="tier-row"><span>Debt-free in</span><strong>'+monthsToYM(sno.months)+' \u00b7 '+monthsToDate(sno.months)+'</strong></div>'
-       +'<div class="tier-row"><span>Total interest paid</span><strong>'+fmtE(sno.totalInterest)+'</strong></div>')
+  html+='<div class="lbl">Debt-free date</div>';
+  html+='<div class="card">'
+    +(ava.neverPayoff?'<div class="loan-helper warn">Loans never fully pay off at these payment levels \u2014 increase an extra payment above.</div>'
+      :'<div class="tier-row"><span>Debt-free in</span><strong style="color:var(--red)">'+monthsToYM(ava.months)+'</strong></div>'
+       +'<div class="tier-row"><span>Target date</span><strong>'+monthsToDate(ava.months)+'</strong></div>'
+       +'<div class="tier-row"><span>Total interest paid</span><strong>'+fmtE(ava.totalInterest)+'</strong></div>')
     +'</div>';
 
-  if(!ava.neverPayoff&&!sno.neverPayoff){
-    var diff=sno.totalInterest-ava.totalInterest;
-    if(diff>0){
-      html+='<div class="disc">Avalanche saves <strong>'+fmtE(diff)+'</strong> more in interest than snowball. Snowball pays off your first loan faster for motivation. The mathematically optimal choice is <strong>avalanche</strong>.</div>';
-    }else{
-      html+='<div class="disc">For your loans, both strategies cost about the same in interest. Pick snowball for the psychological win of clearing a loan sooner.</div>';
-    }
-  }
-
-  /* Per-loan payoff order (avalanche) */
   if(!ava.neverPayoff){
-    html+='<div class="lbl">Payoff order (avalanche)</div><div class="card">';
+    html+='<div class="lbl">Payoff order &amp; per-loan timeline</div><div class="card">';
     var sorted=act.slice().sort(function(a,b){return (b.rate||0)-(a.rate||0);});
     sorted.forEach(function(l,i){
       html+='<div style="display:flex;align-items:center;gap:10px;padding:6px 0'+(i<sorted.length-1?';border-bottom:.5px solid var(--br)':'')+'">'
         +'<div style="width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">'+(i+1)+'</div>'
         +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+esc(l.name)+'</div>'
-        +'<div style="font-size:11px;color:var(--tm)">'+fmtE(l.balance)+' @ '+l.rate+'% \u00b7 cleared in '+monthsToYM(ava.perLoan[l.id].months)+'</div></div></div>';
+        +'<div style="font-size:11px;color:var(--tm)">'+fmtE(l.balance)+' @ '+l.rate+'% \u00b7 cleared in '+monthsToYM(ava.perLoan[l.id].months)+' \u00b7 interest '+fmtE(ava.perLoan[l.id].interest)+'</div></div></div>';
     });
     html+='</div>';
   }
-
   return html;
 }
 
@@ -1251,40 +1256,66 @@ function rPayoff(root){
   var totalDebt=act.reduce(function(s,l){return s+(l.balance||0);},0);
   var minTotal=act.reduce(function(s,l){return s+loanMinPayment(l);},0);
 
-  var html='<div class="disc">Forecasts when you\u2019ll be debt-free based on your loan balances, rates, and any extra you put toward debt each month. Adjust the slider to see the impact.</div>';
+  var html='<div class="disc">Forecasts when you\u2019ll be debt-free. Set how much extra you can afford per loan \u2014 the forecast updates live.</div>';
+
+  /* Interest odometer \u2014 total interest paid across all closed months */
+  var interestPaid=0;
+  finHistory.forEach(function(h){
+    if(h.loanAmortization){Object.keys(h.loanAmortization).forEach(function(id){interestPaid+=(h.loanAmortization[id].interest||0);});}
+  });
+  html+='<div class="odo"><div class="odo-label">Interest paid to lenders so far</div><div class="odo-val" id="odoVal">'+fmtE(interestPaid)+'</div><div class="odo-sub">Every extra payment shrinks this number\u2019s future growth</div></div>';
 
   html+='<div class="g2">'+met('Total debt','neg',fmtE(totalDebt))+met('Min. payments','neg',fmtE(minTotal)+'/mo')+'</div>';
 
-  /* Extra payment control */
-  html+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-    +'<span style="font-size:13px;font-weight:600">Extra payment / month</span>'
-    +'<span style="font-size:16px;font-weight:700;color:var(--red)" id="payoff-extra-val">'+fmtE(payoffExtra)+'</span></div>'
-    +'<input type="range" min="0" max="1000" step="25" value="'+payoffExtra+'" oninput="setPayoffExtra(this.value)" style="width:100%;accent-color:#E60000"/>'
-    +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tm);margin-top:2px"><span>'+EUR+'0</span><span>'+EUR+'500</span><span>'+EUR+'1000</span></div>'
-    +'<div class="irow" style="margin-top:8px;margin-bottom:0"><input type="text" inputmode="decimal" placeholder="Custom amount" value="'+payoffExtra+'" onfocus="if(parseFloat(this.value)===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=\'0\'" oninput="setPayoffExtra(this.value)" style="flex:1"/></div>'
-    +'</div>';
+  if(act.length===0){
+    /* Still show interest paid to date even with no active loans */
+    var ip=0;
+    finHistory.forEach(function(h){if(h.loanAmortization){Object.keys(h.loanAmortization).forEach(function(id){ip+=(h.loanAmortization[id].interest||0);});}});
+    var emptyHtml='<div class="disc">Forecasts when you\u2019ll be debt-free.</div>';
+    if(ip>0)emptyHtml+='<div class="odo"><div class="odo-label">Interest paid to lenders (lifetime)</div><div class="odo-val">'+fmtE(ip)+'</div><div class="odo-sub">All loans cleared \u2014 this number stops growing</div></div>';
+    emptyHtml+='<div class="card" style="text-align:center;padding:20px;color:var(--tm)">No active loans with a balance. '+(ip>0?'You\u2019re debt-free \ud83c\udfc6':'Add loans in the Loans tab.')+'</div>';
+    root.innerHTML=emptyHtml;return;
+  }
 
-  /* Balance-over-time chart */
+  /* Per-loan extra payment inputs */
+  html+='<div class="lbl">Extra payment per loan</div><div class="card">';
+  act.slice().sort(function(a,b){return (b.rate||0)-(a.rate||0);}).forEach(function(l){
+    var minP=loanMinPayment(l);
+    html+='<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      +'<div><span style="font-size:13px;font-weight:600">'+esc(l.name)+'</span> <span style="font-size:11px;color:var(--tm)">'+l.rate+'% \u00b7 min '+fmtE(minP)+'</span></div></div>'
+      +'<div class="irow" style="margin-bottom:0"><span style="font-size:13px;color:var(--tm);flex-shrink:0">+ '+EUR+'</span>'
+      +'<input type="text" inputmode="decimal" placeholder="0" value="'+(getExtra(l.id)||'')+'" onfocus="if(parseFloat(this.value)===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=\'0\'" oninput="setLoanExtra(\''+esc(l.id)+'\',this.value)" style="flex:1"/>'
+      +'<span style="font-size:11px;color:var(--tm);flex-shrink:0">= '+fmtE(minP+getExtra(l.id))+'/mo</span></div></div>';
+  });
+  html+='<hr class="dv"/><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600"><span>Total extra / month</span><span style="color:var(--red)" id="payoff-total-extra">'+fmtE(totalExtra())+'</span></div></div>';
+
+  /* Rollover toggle */
+  html+='<div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px">'
+    +'<div style="flex:1"><div style="font-size:13px;font-weight:600">Cascade freed payments</div>'
+    +'<div style="font-size:11px;color:var(--tm)">When a loan clears, roll its payment into the next loan (recommended)</div></div>'
+    +'<button class="btn sm '+(payoffRollover?'g':'')+'" style="flex:none;width:auto" onclick="toggleRollover()">'+(payoffRollover?'ON':'OFF')+'</button></div>';
+
   html+='<div class="card"><div class="lbl" style="margin-bottom:8px">Remaining debt over time</div><div class="cw"><canvas id="payoffC" role="img" aria-label="Debt payoff projection"></canvas></div></div>';
-
-  /* Results (recalculated live) */
   html+='<div id="payoff-results">'+payoffResultsHTML()+'</div>';
-
   root.innerHTML=html;
   drawPayoffChart();
+  /* Animate the interest odometer */
+  var odo=document.getElementById('odoVal');
+  if(odo){var target=interestPaid;countUp(odo,target,function(v){return fmtE(v);},900);}
 }
 
 function drawPayoffChart(){
   var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
   if(act.length===0)return;
-  var withExtra=simulatePayoff(act,payoffExtra,'avalanche');
-  var noExtra=simulatePayoff(act,0,'avalanche');
-  /* Build labels by year markers */
+  var withExtra=simulatePayoff(act,'avalanche');
+  var savedExtras=payoffExtras;payoffExtras={};
+  var noExtra=simulatePayoff(act,'avalanche');
+  payoffExtras=savedExtras;
   var maxLen=Math.max(withExtra.schedule.length,noExtra.schedule.length);
   var labels=[];
   for(var i=0;i<maxLen;i++){labels.push(i%12===0?('Y'+(i/12)):'');}
   mkChart('payoffC',{type:'line',data:{labels:labels,datasets:[
-    {label:'With '+fmtE(payoffExtra)+' extra',data:withExtra.schedule,borderColor:'#E60000',backgroundColor:'rgba(230,0,0,0.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2},
+    {label:'With '+fmtE(totalExtra())+' extra',data:withExtra.schedule,borderColor:'#E60000',backgroundColor:'rgba(230,0,0,0.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2},
     {label:'Minimums only',data:noExtra.schedule,borderColor:'#ACACAC',borderDash:[5,5],fill:false,tension:.3,pointRadius:0,borderWidth:1.5}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc(),font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return' '+fmtE(ctx.parsed.y);}}}},scales:{y:{beginAtZero:true,ticks:{color:tc(),callback:function(v){return EUR+(v/1000).toFixed(0)+'k';}},grid:{color:gc()}},x:{ticks:{color:tc(),font:{size:10},maxRotation:0,autoSkip:false},grid:{display:false}}}}});
 }
@@ -1293,8 +1324,19 @@ function drawPayoffChart(){
    TAB 4 — ANALYSIS
 ══════════════════════════════════════════════ */
 function rAnalysis(root){
-  if(!finHistory.length){root.innerHTML='<div class="card" style="text-align:center;padding:24px;color:var(--tm)">No data yet. Save a month first.</div>';return;}
-  var last=finHistory[0],html='<div class="lbl">Latest month vs targets</div><div class="card">';
+  if(!finHistory.length){root.innerHTML='<div class="card" style="text-align:center;padding:24px;color:var(--tm)">No data yet. Close a month first.</div>';return;}
+  var last=finHistory[0];
+  var html=insightHTML();
+
+  /* Streaks */
+  var streaks=streakHTML();
+  if(streaks)html+='<div class="lbl">Streaks</div>'+streaks;
+
+  /* Money flow (Sankey) */
+  var sk=sankeyHTML();
+  if(sk)html+='<div class="lbl">Where your money flowed \u2014 '+esc(last.mo)+' '+last.yr+'</div><div class="card">'+sk+'</div>';
+
+  html+='<div class="lbl">Latest month vs targets</div><div class="card">';
   Object.keys(TARGETS).forEach(function(cat){
     var target=TARGETS[cat];if(target===0)return;
     var actual=0;if(last.er){for(var i=0;i<last.er.length;i++){if(last.er[i].lbl===cat){actual=last.er[i].amt||0;break;}}}
@@ -1498,12 +1540,12 @@ function rSettings(root){
     +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Import backup</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">Restore from a previously exported JSON file. Replaces all current data.</div><button class="btn" onclick="importData()">Import from file</button></div>'
     +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Storage usage</div>'+storageInfo()+'<div style="font-size:12px;color:var(--tm);margin-top:8px">'+finHistory.length+' months finalized | '+Object.keys(drafts||{}).length+' drafts | '+Object.keys(notes).length+' notes</div></div>'
     +'<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:6px">Reset all data</div><div style="font-size:12px;color:var(--tm);margin-bottom:10px">Permanently delete everything. Export first.</div><button class="btn d" onclick="resetAll()">Reset all data</button></div>'
-    +'<div class="disc" style="margin-top:4px">Version 12 | Autosave + cross-tab sync + crash recovery. Data stored locally in your browser. Export regularly.</div>';
+    +'<div class="disc" style="margin-top:4px">Version 14 | Decide tab, milestones, insights, odometer, money flow, streaks, PWA. Data stored locally. Export regularly.</div>';
 }
 function resetAll(){
   if(!confirm('Delete ALL data? Export a backup first.'))return;
   if(!confirm('Are you sure? Cannot be undone.'))return;
-  [SK.h,SK.l,SK.s,SK.n,SK.d].forEach(function(k){localStorage.removeItem(k);});
+  [SK.h,SK.l,SK.s,SK.n,SK.d,SK.m,SK.g].forEach(function(k){localStorage.removeItem(k);});
   lastDraftJSON='';
   loadState();incRows=[];expRows=DEFEXP.map(function(l){return{lbl:l,amt:0};});curTab='Budget';render();toast('All data reset');
 }
@@ -1606,6 +1648,318 @@ function onStorageEvent(e){
     cfg=lsGet(SK.s,cfg);
     var hs=document.getElementById('hsub');if(hs)hs.textContent=MO[selM]+' '+selY+' | Base '+fmtE(totalBaseIncome())+'/mo';
   }
+}
+
+/* ══════════════════════════════════════════════
+   FEATURE ENGINES: haptics, count-up, milestones,
+   insights, opportunity cost, time machine, refinance,
+   sankey, streaks
+══════════════════════════════════════════════ */
+
+/* Haptic feedback (Android; no-op on iOS) */
+function haptic(ms){try{if(navigator.vibrate)navigator.vibrate(ms||10);}catch(e){}}
+
+/* Count-up animation for a number element */
+function countUp(el,to,fmt,dur){
+  if(!el)return;dur=dur||700;
+  var start=0,t0=null;
+  function step(ts){
+    if(!t0)t0=ts;var p=Math.min((ts-t0)/dur,1);
+    var ease=1-Math.pow(1-p,3);
+    var val=start+(to-start)*ease;
+    el.textContent=fmt?fmt(val):Math.round(val);
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── MILESTONES ── */
+function checkMilestones(){
+  /* Compute current financial state and fire celebrations for newly-crossed thresholds */
+  var totalDebt=activeLoans().reduce(function(s,l){return s+(l.balance||0);},0);
+  var clearedLoans=loans.filter(function(l){return l.balance===0;}).length;
+  var last=finHistory[0];
+  var savingsRate=last?last.rate:null;
+  var queue=[];
+
+  /* First loan cleared */
+  if(clearedLoans>=1&&!achieved.firstLoanCleared){
+    achieved.firstLoanCleared=true;
+    queue.push({e:'🎯',t:'First loan cleared!',s:'One down. The freed-up payment now accelerates your next loan. This is how momentum compounds.'});
+  }
+  /* Debt milestones */
+  [50000,40000,30000,20000,10000,5000].forEach(function(thresh){
+    var k='debtUnder'+thresh;
+    if(totalDebt>0&&totalDebt<thresh&&!achieved[k]){
+      achieved[k]=true;
+      queue.push({e:'📉',t:'Debt under '+fmtE(thresh)+'!',s:'Your total debt just dropped below '+fmtE(thresh)+'. Keep the pressure on the highest-rate loan.'});
+    }
+  });
+  /* Debt-free */
+  if(totalDebt===0&&loans.some(function(l){return l.balance===0;})&&!achieved.debtFree&&finHistory.length>0){
+    achieved.debtFree=true;
+    queue.push({e:'🏆',t:'DEBT FREE!',s:'Every loan cleared. Redirect every euro that was going to debt straight into investments. This is a life-changing moment.'});
+  }
+  /* Savings rate milestones */
+  if(savingsRate!==null){
+    [20,30,40,50].forEach(function(thresh){
+      var k='saveRate'+thresh;
+      if(savingsRate>=thresh&&!achieved[k]){
+        achieved[k]=true;
+        queue.push({e:'💪',t:savingsRate.toFixed(0)+'% savings rate!',s:'You saved over '+thresh+'% of your income. That is elite-level discipline \u2014 most people never break 10%.'});
+      }
+    });
+  }
+  /* Months tracked */
+  [3,6,12,24].forEach(function(thresh){
+    var k='tracked'+thresh;
+    if(finHistory.length>=thresh&&!achieved[k]){
+      achieved[k]=true;
+      queue.push({e:'📅',t:thresh+' months tracked!',s:'Consistency is the whole game. '+thresh+' months of data means your forecasts are now genuinely accurate.'});
+    }
+  });
+
+  if(queue.length){
+    lsSet(SK.m,achieved);
+    /* Show the most significant one (first in queue) */
+    showCelebrate(queue[0]);
+  }
+}
+
+function showCelebrate(m){
+  var ov=document.getElementById('celebrate');if(!ov)return;
+  document.getElementById('cel-emoji').textContent=m.e;
+  document.getElementById('cel-title').textContent=m.t;
+  document.getElementById('cel-sub').textContent=m.s;
+  ov.classList.add('on');
+  haptic([15,40,15]);
+  fireConfetti();
+}
+function closeCelebrate(){var ov=document.getElementById('celebrate');if(ov)ov.classList.remove('on');}
+function fireConfetti(){
+  var colors=['#E60000','#0F6E56','#185FA5','#E6A000','#A32D2D','#ACACAC'];
+  for(var i=0;i<60;i++){
+    (function(i){
+      setTimeout(function(){
+        var c=document.createElement('div');c.className='confetti';
+        c.style.left=Math.random()*100+'vw';
+        c.style.background=colors[i%colors.length];
+        c.style.transform='rotate('+Math.random()*360+'deg)';
+        document.body.appendChild(c);
+        var fall=600+Math.random()*900,drift=(Math.random()-.5)*200;
+        c.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:'translate('+drift+'px,'+(window.innerHeight+40)+'px) rotate('+Math.random()*720+'deg)',opacity:.9}],{duration:fall+1200,easing:'cubic-bezier(.3,.6,.5,1)'});
+        setTimeout(function(){if(c.parentNode)c.parentNode.removeChild(c);},fall+1300);
+      },i*18);
+    })(i);
+  }
+}
+
+/* ── SMART INSIGHTS ── */
+function dismissInsight(){var el=document.getElementById('insightStrip');if(el)el.style.display='none';}
+function computeInsight(){
+  if(finHistory.length===0)return null;
+  var last=finHistory[0],prev=finHistory[1];
+  var insights=[];
+  var totalDebt=activeLoans().reduce(function(s,l){return s+(l.balance||0);},0);
+
+  if(prev){
+    var rateDiff=last.rate-prev.rate;
+    if(rateDiff>=2)insights.push({ic:'📈',t:'Your savings rate beat last month by '+rateDiff.toFixed(0)+' points \u2014 '+last.rate.toFixed(0)+'% this month.'});
+    var expDiff=prev.expenses-last.expenses;
+    if(expDiff>=50)insights.push({ic:'✂️',t:'You spent '+fmtE(expDiff)+' less than last month. Nice trimming.'});
+  }
+  if(totalDebt>0&&totalDebt<30000)insights.push({ic:'🎯',t:'Total debt is down to '+fmtE(totalDebt)+'. The finish line is in sight.'});
+  if(last.rate>=20)insights.push({ic:'💪',t:'A '+last.rate.toFixed(0)+'% savings rate puts you in the top tier of savers.'});
+  /* Average savings rate over last 3 */
+  if(finHistory.length>=3){
+    var avg3=finHistory.slice(0,3).reduce(function(s,h){return s+h.rate;},0)/3;
+    insights.push({ic:'📊',t:'Your 3-month average savings rate is '+avg3.toFixed(0)+'%.'});
+  }
+  if(insights.length===0)return null;
+  /* Rotate based on day so it changes daily */
+  return insights[new Date().getDate()%insights.length];
+}
+function insightHTML(){
+  var ins=computeInsight();if(!ins)return'';
+  return'<div class="insight" id="insightStrip"><span class="ic">'+ins.ic+'</span><span>'+ins.t+'</span><button class="dx" onclick="dismissInsight()" aria-label="Dismiss">\u2715</button></div>';
+}
+
+/* ── DECIDE TAB: opportunity cost + time machine + refinance ── */
+var decideAmount=1200;
+function setDecideAmount(v){decideAmount=Math.max(0,parseFloat(v)||0);refreshDecide();}
+function refreshDecide(){var el=document.getElementById('decide-out');if(el)el.innerHTML=decideOutputHTML();}
+
+function decideOutputHTML(){
+  var amt=decideAmount;if(amt<=0)return'<div style="font-size:12px;color:var(--tm);padding:8px">Enter an amount above to see its true cost.</div>';
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  var topLoan=act.length?act.reduce(function(a,b){return(a.rate||0)>=(b.rate||0)?a:b;}):null;
+  /* If applied to highest-rate loan: interest avoided over the loan's remaining life (approx) */
+  var debtBenefit=0,debtNote='';
+  if(topLoan){
+    var r=topLoan.rate/100;
+    /* Approx interest saved = amount * rate * estimated years remaining */
+    var pmt=loanMinPayment(topLoan);
+    var monthsLeft=pmt>0?Math.min(topLoan.balance/pmt,360):60;
+    var yearsLeft=monthsLeft/12;
+    debtBenefit=amt*r*yearsLeft;
+    debtNote='Paid toward '+esc(topLoan.name)+' ('+topLoan.rate+'%), avoiding ~'+fmtE(debtBenefit)+' in interest over its remaining ~'+yearsLeft.toFixed(1)+' years.';
+  }
+  /* If invested: 10-year growth at 7% and 10% */
+  var inv7=amt*Math.pow(1.07,10),inv10=amt*Math.pow(1.10,10);
+
+  var html='<div class="decide-out">';
+  html+='<div style="font-size:12px;color:var(--tm);margin-bottom:2px">The true cost of spending <strong style="color:var(--tx)">'+fmtE(amt)+'</strong>:</div>';
+  if(topLoan){
+    html+='<div class="decide-row debt"><div><div class="decide-big" style="color:var(--rd)">\u2212'+fmtE(debtBenefit)+'</div><div style="font-size:11px;color:var(--tm)">'+debtNote+'</div></div></div>';
+  }
+  html+='<div class="decide-row invest"><div><div class="decide-big" style="color:var(--green)">'+fmtE(inv7)+' \u2013 '+fmtE(inv10)+'</div><div style="font-size:11px;color:var(--tm)">What '+fmtE(amt)+' becomes in 10 years if invested instead (7\u201310% annual return).</div></div></div>';
+  html+='<div class="disc" style="margin:4px 0 0">Spending '+fmtE(amt)+' today isn\u2019t just '+fmtE(amt)+'. It\u2019s the '+fmtE(inv10-amt)+'+ in growth you give up, plus any interest you could have killed. This is opportunity cost \u2014 the real price of every purchase.</div>';
+  html+='</div>';
+  return html;
+}
+
+/* Time machine projection */
+var tmYears=5;
+function setTmYears(v){tmYears=parseInt(v,10);refreshTm();}
+function refreshTm(){
+  var el=document.getElementById('tm-out');if(el)el.innerHTML=tmOutputHTML();
+  var lbl=document.getElementById('tm-years-lbl');if(lbl)lbl.textContent=tmYears+(tmYears===1?' year':' years');
+  drawTmChart();
+}
+function tmOutputHTML(){
+  var ni=totalBaseIncome(),loanPmt=totalLoanPayments(),discr=Math.max(0,ni-loanPmt);
+  var monthlyInvest=Math.round(discr*0.15);
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  /* Project debt using avalanche w/ current extras */
+  var sim=simulatePayoff(act,'avalanche');
+  var monthsToFree=sim.neverPayoff?999:sim.months;
+  var debtAtTarget=tmYears*12>=monthsToFree?0:(sim.schedule[tmYears*12-1]||0);
+  /* Invested amount FV */
+  var fvInv=Math.round(fvAnnuity(monthlyInvest,7,tmYears));
+  var html='<div class="g2">'+met('Debt in '+tmYears+'y',debtAtTarget===0?'pos':'neg',debtAtTarget===0?'\u20ac0 \u2014 free!':fmtE(debtAtTarget))+met('Invested in '+tmYears+'y','pos',fmtE(fvInv))+'</div>';
+  if(debtAtTarget===0&&!sim.neverPayoff)html+='<div class="notice">You\u2019ll be completely debt-free in '+monthsToYM(monthsToFree)+' \u2014 within this window.</div>';
+  html+='<div class="disc">Assumes '+fmtE(monthlyInvest)+'/month invested at 7% (your recommended tier) and current loan payments. Adjust extras in the Payoff tab to change the debt curve.</div>';
+  return html;
+}
+function drawTmChart(){
+  var ni=totalBaseIncome(),loanPmt=totalLoanPayments(),discr=Math.max(0,ni-loanPmt);
+  var monthlyInvest=Math.round(discr*0.15);
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  var sim=simulatePayoff(act,'avalanche');
+  var months=tmYears*12,labels=[],debtLine=[],investLine=[],netLine=[];
+  for(var m=0;m<=months;m++){
+    labels.push(m%12===0?('Y'+(m/12)):'');
+    var debt=m===0?act.reduce(function(s,l){return s+l.balance;},0):(m<=sim.schedule.length?sim.schedule[m-1]:0);
+    debtLine.push(Math.round(debt));
+    var inv=Math.round(fvAnnuity(monthlyInvest,7,m/12));
+    investLine.push(inv);
+    netLine.push(Math.round(inv-debt));
+  }
+  mkChart('tmC',{type:'line',data:{labels:labels,datasets:[
+    {label:'Investments',data:investLine,borderColor:'#0F6E56',backgroundColor:'rgba(15,110,86,0.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2},
+    {label:'Debt',data:debtLine,borderColor:'#E60000',fill:false,tension:.3,pointRadius:0,borderWidth:2},
+    {label:'Net worth',data:netLine,borderColor:'#185FA5',borderDash:[5,5],fill:false,tension:.3,pointRadius:0,borderWidth:1.5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc(),font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return' '+ctx.dataset.label+': '+fmtE(ctx.parsed.y);}}}},scales:{y:{ticks:{color:tc(),callback:function(v){return EUR+(v/1000).toFixed(0)+'k';}},grid:{color:gc()}},x:{ticks:{color:tc(),font:{size:10},maxRotation:0,autoSkip:false},grid:{display:false}}}}});
+}
+
+/* Refinance calculator */
+var refiLoanId='',refiRate=3.5;
+function setRefiLoan(id){refiLoanId=id;refreshRefi();}
+function setRefiRate(v){refiRate=Math.max(0,parseFloat(v)||0);refreshRefi();}
+function refreshRefi(){var el=document.getElementById('refi-out');if(el)el.innerHTML=refiOutputHTML();}
+function refiOutputHTML(){
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  if(act.length===0)return'<div style="font-size:12px;color:var(--tm)">No active loans to refinance.</div>';
+  var l=findLoanById(refiLoanId)||act[0];
+  var n=l.inst||60;
+  var curPmt=monthlyPmt(l.balance,l.rate,n);
+  var newPmt=monthlyPmt(l.balance,refiRate,n);
+  var curTotal=curPmt*n,newTotal=newPmt*n;
+  var saved=curTotal-newTotal;
+  var html='<div class="tier-row"><span>Current ('+l.rate+'%)</span><strong>'+fmtE(curPmt)+'/mo \u00b7 '+fmtE(curTotal)+' total</strong></div>';
+  html+='<div class="tier-row"><span>Refinanced ('+refiRate+'%)</span><strong class="g">'+fmtE(newPmt)+'/mo \u00b7 '+fmtE(newTotal)+' total</strong></div>';
+  html+='<hr class="tier-div"/>';
+  html+='<div class="tier-row"><span>Lifetime saving</span><strong style="color:'+(saved>0?'var(--green)':'var(--rd)')+'">'+fmtS(saved)+'</strong></div>';
+  if(saved>500)html+='<div class="disc" style="margin-top:6px">Refinancing '+esc(l.name)+' to '+refiRate+'% would save '+fmtE(saved)+' over the loan\u2019s life. Worth asking your bank \u2014 but check for fees first.</div>';
+  return html;
+}
+
+function rDecide(root){
+  var html=insightHTML();
+  /* Opportunity cost engine */
+  html+='<div class="lbl">Buy this, or build wealth?</div>'
+    +'<div class="card"><div style="font-size:12px;color:var(--tm);margin-bottom:8px">Enter the cost of something you\u2019re considering buying:</div>'
+    +'<input class="decide-input" type="text" inputmode="decimal" value="'+decideAmount+'" onfocus="this.select()" oninput="setDecideAmount(this.value)"/>'
+    +'<div id="decide-out" style="margin-top:12px">'+decideOutputHTML()+'</div></div>';
+
+  /* Time machine */
+  html+='<div class="lbl">Time machine \u2014 where will you be?</div>'
+    +'<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:13px;font-weight:600">Look ahead</span><span style="font-size:15px;font-weight:700;color:var(--red)" id="tm-years-lbl">'+tmYears+' years</span></div>'
+    +'<input class="tm-slider" type="range" min="1" max="20" step="1" value="'+tmYears+'" oninput="setTmYears(this.value)"/>'
+    +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tm)"><span>1y</span><span>10y</span><span>20y</span></div>'
+    +'<div class="cw" style="margin-top:8px"><canvas id="tmC" role="img" aria-label="Future projection"></canvas></div>'
+    +'<div id="tm-out" style="margin-top:10px">'+tmOutputHTML()+'</div></div>';
+
+  /* Refinance calculator */
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  if(act.length){
+    if(!refiLoanId)refiLoanId=act[0].id;
+    html+='<div class="lbl">What if I refinanced?</div><div class="card">'
+      +'<div class="irow"><select onchange="setRefiLoan(this.value)" style="flex:1">';
+    act.forEach(function(l){html+='<option value="'+esc(l.id)+'"'+(l.id===refiLoanId?' selected':'')+'>'+esc(l.name)+' ('+l.rate+'%)</option>';});
+    html+='</select></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px"><span style="font-size:12px;color:var(--tm)">New rate</span><span style="font-size:15px;font-weight:700;color:var(--green)">'+refiRate+'%</span></div>'
+      +'<input class="tm-slider" type="range" min="0" max="10" step="0.1" value="'+refiRate+'" oninput="setRefiRate(this.value)" style="accent-color:#0F6E56"/>'
+      +'<div id="refi-out" style="margin-top:8px">'+refiOutputHTML()+'</div></div>';
+  }
+
+  root.innerHTML=html;
+  drawTmChart();
+}
+
+/* ── SANKEY (CSS-based money flow) ── */
+function sankeyHTML(){
+  var last=finHistory[0];if(!last)return'';
+  var inc=last.income,exp=last.expenses,saved=Math.max(0,last.balance);
+  if(inc<=0)return'';
+  var loanTotal=0;(last.er||[]).forEach(function(r){if(r.loanId)loanTotal+=(r.amt||0);});
+  var living=exp-loanTotal;
+  var segs=[
+    {l:'Loans',v:loanTotal,c:'#A32D2D'},
+    {l:'Living',v:living,c:'#6A6A6A'},
+    {l:'Saved/Invested',v:saved,c:'#0F6E56'}
+  ].filter(function(s){return s.v>0;});
+  var html='<div class="sankey">';
+  html+='<div class="sankey-row" style="background:#185FA5;width:100%">Income '+fmtE(inc)+'</div>';
+  segs.forEach(function(s){
+    var pct=Math.max(8,(s.v/inc)*100);
+    html+='<div class="sankey-row" style="background:'+s.c+';width:'+pct+'%">'+s.l+' '+fmtE(s.v)+'</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+/* ── SPENDING STREAKS & GUARDRAILS ── */
+function setGuard(cat,v){
+  var n=parseFloat(v)||0;
+  if(n>0)guardrails[cat]=n;else delete guardrails[cat];
+  lsSet(SK.g,guardrails);
+}
+function streakHTML(){
+  if(finHistory.length<2)return'';
+  var html='';
+  /* Dining streak: months under combined 300 */
+  var streak=0;
+  for(var i=0;i<finHistory.length;i++){
+    var dining=0;(finHistory[i].er||[]).forEach(function(r){if(r.lbl==='Night out'||r.lbl==='Take-Out food')dining+=(r.amt||0);});
+    if(dining<=300)streak++;else break;
+  }
+  if(streak>=2)html+='<div class="streak"><span class="fire">\ud83d\udd25</span><span>You\u2019ve kept dining + delivery under '+fmtE(300)+' for <strong>'+streak+' months straight</strong>.</span></div>';
+  /* Positive balance streak */
+  var posStreak=0;
+  for(var j=0;j<finHistory.length;j++){if(finHistory[j].balance>=0)posStreak++;else break;}
+  if(posStreak>=2)html+='<div class="streak"><span class="fire">\ud83d\udcb0</span><span>You\u2019ve stayed in the green for <strong>'+posStreak+' months straight</strong>.</span></div>';
+  return html;
 }
 
 /* ── Boot ── */
