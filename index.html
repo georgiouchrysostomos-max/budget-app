@@ -1131,6 +1131,17 @@ var MONTH_CAP=600;
 function getExtra(id){return parseFloat(payoffExtras[id])||0;}
 function totalExtra(){return activeLoans().reduce(function(s,l){return s+getExtra(l.id);},0);}
 
+function monthsToDate(m){
+  var d=new Date(selY,selM+m,1);
+  return MO[d.getMonth()].slice(0,3)+' '+d.getFullYear();
+}
+function monthsToYM(m){
+  var y=Math.floor(m/12),mo=m%12;
+  if(y===0)return mo+' mo';
+  if(mo===0)return y+' yr';
+  return y+' yr '+mo+' mo';
+}
+
 function loanMinPayment(l){
   var m=parseFloat(l.monthly)||0;
   if(m>0)return m;
