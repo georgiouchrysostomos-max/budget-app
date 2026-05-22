@@ -150,7 +150,7 @@ hr.dv{border:none;border-top:.5px solid var(--br);margin:10px 0}
 var EUR='\u20ac';
 var COLORS=['#E60000','#6A6A6A','#838383','#ACACAC','#993C1D','#444441','#A32D2D','#185FA5','#0F6E56','#D6D6D6'];
 var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var TABS=['Budget','Advisor','Loans','Analysis','Action Plan','Investments','Settings'];
+var TABS=['Budget','Advisor','Loans','Payoff','Analysis','Action Plan','Investments','Settings'];
 var DEFEXP=['Groceries','Electricity','Take-Out food','Water bill','Night out','Various'];
 var DEFLOAN=[{id:'L-1',name:'Loan 1',balance:0,rate:0,inst:0,monthly:0,archived:false},{id:'L-2',name:'Loan 2',balance:0,rate:0,inst:0,monthly:0,archived:false},{id:'L-3',name:'Loan 3',balance:0,rate:0,inst:0,monthly:0,archived:false}];
 var TARGETS={'Groceries':300,'Electricity':120,'Take-Out food':100,'Water bill':50,'Night out':200,'Various':150};
@@ -387,6 +387,7 @@ function render(){
   if(curTab==='Budget')rBudget(root);
   else if(curTab==='Advisor')rAdvisor(root);
   else if(curTab==='Loans')rLoans(root);
+  else if(curTab==='Payoff')rPayoff(root);
   else if(curTab==='Analysis')rAnalysis(root);
   else if(curTab==='Action Plan')rAction(root);
   else if(curTab==='Investments')rInvest(root);
@@ -1076,6 +1077,217 @@ function updL2(id,f,v){
   /* If balance was edited and loan was paid off (balance=0) and now has balance, unarchive nothing \u2014 keep status as-is */
 }
 function updLName(id,v){var l=findLoanById(id);if(!l)return;l.name=v;loanDebounce();}
+
+/* ══════════════════════════════════════════════
+   TAB \u2014 PAYOFF FORECASTER (avalanche vs snowball)
+══════════════════════════════════════════════ */
+var payoffExtra=100;  /* extra monthly payment, user-adjustable */
+var MONTH_CAP=600;    /* 50-year safety cap on simulations */
+
+/* Baseline minimum payment for a loan = its scheduled monthly payment.
+   Uses the 'monthly' field if set, otherwise the annuity estimate. */
+function loanMinPayment(l){
+  var m=parseFloat(l.monthly)||0;
+  if(m>0)return m;
+  return monthlyPmt(l.balance||0,l.rate||0,l.inst||0);
+}
+
+/* Simulate paying off a set of loans with a given strategy and extra payment.
+   strategy: 'avalanche' (highest rate first) or 'snowball' (smallest balance first).
+   Returns {months, totalInterest, totalPaid, perLoan:{id:{months,interest}}, schedule:[balanceTotal per month], neverPayoff:bool} */
+function simulatePayoff(loanList,extra,strategy){
+  /* Deep clone so we don't mutate real data */
+  var L=loanList.filter(function(l){return (l.balance||0)>0;}).map(function(l){
+    return{id:l.id,name:l.name,balance:l.balance,rate:l.rate,min:loanMinPayment(l)};
+  });
+  if(L.length===0)return{months:0,totalInterest:0,totalPaid:0,perLoan:{},schedule:[],neverPayoff:false};
+
+  var perLoan={};
+  L.forEach(function(l){perLoan[l.id]={months:0,interest:0};});
+
+  var months=0,totalInterest=0,totalPaid=0,schedule=[];
+  var neverPayoff=false;
+
+  function targetOrder(){
+    var open=L.filter(function(l){return l.balance>0.005;});
+    if(strategy==='snowball')open.sort(function(a,b){return a.balance-b.balance;});
+    else open.sort(function(a,b){return (b.rate||0)-(a.rate||0);}); /* avalanche */
+    return open;
+  }
+
+  while(months<MONTH_CAP){
+    var open=L.filter(function(l){return l.balance>0.005;});
+    if(open.length===0)break;
+
+    /* Total budget this month = sum of all minimums + extra */
+    var budget=open.reduce(function(s,l){return s+l.min;},0)+extra;
+
+    /* 1) Apply interest to every open loan */
+    open.forEach(function(l){
+      var int=l.balance*(l.rate/100)/12;
+      l.balance+=int;
+      totalInterest+=int;
+      perLoan[l.id].interest+=int;
+    });
+
+    /* 2) Pay minimums on all (except we'll funnel extra to the target) */
+    var ordered=targetOrder();
+    /* Pay each loan its minimum; accumulate any leftover toward the target */
+    var remaining=budget;
+    /* First, pay minimum on every loan except target */
+    open.forEach(function(l){
+      if(l.id===ordered[0].id)return; /* skip target, handled last with extra */
+      var pay=Math.min(l.min,l.balance,remaining);
+      l.balance-=pay;remaining-=pay;totalPaid+=pay;
+    });
+    /* Then dump everything remaining on the target loan */
+    if(ordered[0]){
+      var t=ordered[0];
+      var pay=Math.min(remaining,t.balance);
+      t.balance-=pay;remaining-=pay;totalPaid+=pay;
+    }
+
+    /* Count months for loans still open */
+    open.forEach(function(l){if(l.balance>0.005)perLoan[l.id].months++;});
+
+    months++;
+    var totalBal=L.reduce(function(s,l){return s+Math.max(0,l.balance);},0);
+    schedule.push(Math.round(totalBal));
+
+    /* Detect non-amortizing situation: if total balance isn't decreasing, bail */
+    if(months>2&&schedule[months-1]>=schedule[months-2]&&extra<=0){
+      neverPayoff=true;break;
+    }
+  }
+  if(months>=MONTH_CAP)neverPayoff=true;
+
+  return{months:months,totalInterest:Math.round(totalInterest),totalPaid:Math.round(totalPaid),perLoan:perLoan,schedule:schedule,neverPayoff:neverPayoff};
+}
+
+function monthsToDate(m){
+  var d=new Date(selY,selM+m,1);
+  return MO[d.getMonth()].slice(0,3)+' '+d.getFullYear();
+}
+function monthsToYM(m){
+  var y=Math.floor(m/12),mo=m%12;
+  if(y===0)return mo+' mo';
+  if(mo===0)return y+' yr';
+  return y+' yr '+mo+' mo';
+}
+
+function setPayoffExtra(v){
+  payoffExtra=Math.max(0,parseFloat(v)||0);
+  /* Live re-render of just the results, keep slider focus */
+  var r=document.getElementById('payoff-results');
+  if(r)r.innerHTML=payoffResultsHTML();
+  var sv=document.getElementById('payoff-extra-val');
+  if(sv)sv.textContent=fmtE(payoffExtra);
+  drawPayoffChart();
+}
+
+function payoffResultsHTML(){
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  if(act.length===0)return'<div class="card" style="text-align:center;padding:20px;color:var(--tm)">No active loans with a balance. Nothing to forecast.</div>';
+
+  var ava=simulatePayoff(act,payoffExtra,'avalanche');
+  var sno=simulatePayoff(act,payoffExtra,'snowball');
+  var noExtra=simulatePayoff(act,0,'avalanche');
+
+  var interestSaved=noExtra.totalInterest-ava.totalInterest;
+  var timeSaved=noExtra.months-ava.months;
+
+  var html='';
+
+  /* Headline impact card */
+  if(payoffExtra>0&&!ava.neverPayoff&&!noExtra.neverPayoff){
+    html+='<div class="card" style="background:var(--gl);border:.5px solid var(--green)">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px">Impact of '+fmtE(payoffExtra)+'/month extra</div>'
+      +'<div class="g2">'+met('Interest saved','pos',fmtE(interestSaved))+met('Time saved','pos',monthsToYM(timeSaved))+'</div>'
+      +'<div style="font-size:11px;color:var(--tm)">vs paying only minimums. Extra payments target the highest-rate loan first (avalanche).</div></div>';
+  }
+
+  /* Avalanche vs Snowball comparison */
+  html+='<div class="lbl">Avalanche vs Snowball</div>';
+  html+='<div class="card tier rec" style="margin-bottom:8px;border-left:4px solid var(--red)">'
+    +'<div class="tier-hd"><span class="tier-tt" style="color:var(--red)">Avalanche \u2014 highest rate first</span><span class="tier-tg r">Least interest</span></div>'
+    +(ava.neverPayoff?'<div class="loan-helper warn">Loans never pay off at this payment level \u2014 increase the extra payment.</div>'
+      :'<div class="tier-row"><span>Debt-free in</span><strong>'+monthsToYM(ava.months)+' \u00b7 '+monthsToDate(ava.months)+'</strong></div>'
+       +'<div class="tier-row"><span>Total interest paid</span><strong class="r">'+fmtE(ava.totalInterest)+'</strong></div>')
+    +'</div>';
+  html+='<div class="card tier buf" style="border-left:4px solid var(--green)">'
+    +'<div class="tier-hd"><span class="tier-tt" style="color:var(--green)">Snowball \u2014 smallest balance first</span><span class="tier-tg g">Quick wins</span></div>'
+    +(sno.neverPayoff?'<div class="loan-helper warn">Loans never pay off at this payment level \u2014 increase the extra payment.</div>'
+      :'<div class="tier-row"><span>Debt-free in</span><strong>'+monthsToYM(sno.months)+' \u00b7 '+monthsToDate(sno.months)+'</strong></div>'
+       +'<div class="tier-row"><span>Total interest paid</span><strong>'+fmtE(sno.totalInterest)+'</strong></div>')
+    +'</div>';
+
+  if(!ava.neverPayoff&&!sno.neverPayoff){
+    var diff=sno.totalInterest-ava.totalInterest;
+    if(diff>0){
+      html+='<div class="disc">Avalanche saves <strong>'+fmtE(diff)+'</strong> more in interest than snowball. Snowball pays off your first loan faster for motivation. The mathematically optimal choice is <strong>avalanche</strong>.</div>';
+    }else{
+      html+='<div class="disc">For your loans, both strategies cost about the same in interest. Pick snowball for the psychological win of clearing a loan sooner.</div>';
+    }
+  }
+
+  /* Per-loan payoff order (avalanche) */
+  if(!ava.neverPayoff){
+    html+='<div class="lbl">Payoff order (avalanche)</div><div class="card">';
+    var sorted=act.slice().sort(function(a,b){return (b.rate||0)-(a.rate||0);});
+    sorted.forEach(function(l,i){
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:6px 0'+(i<sorted.length-1?';border-bottom:.5px solid var(--br)':'')+'">'
+        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">'+(i+1)+'</div>'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+esc(l.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--tm)">'+fmtE(l.balance)+' @ '+l.rate+'% \u00b7 cleared in '+monthsToYM(ava.perLoan[l.id].months)+'</div></div></div>';
+    });
+    html+='</div>';
+  }
+
+  return html;
+}
+
+function rPayoff(root){
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  var totalDebt=act.reduce(function(s,l){return s+(l.balance||0);},0);
+  var minTotal=act.reduce(function(s,l){return s+loanMinPayment(l);},0);
+
+  var html='<div class="disc">Forecasts when you\u2019ll be debt-free based on your loan balances, rates, and any extra you put toward debt each month. Adjust the slider to see the impact.</div>';
+
+  html+='<div class="g2">'+met('Total debt','neg',fmtE(totalDebt))+met('Min. payments','neg',fmtE(minTotal)+'/mo')+'</div>';
+
+  /* Extra payment control */
+  html+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<span style="font-size:13px;font-weight:600">Extra payment / month</span>'
+    +'<span style="font-size:16px;font-weight:700;color:var(--red)" id="payoff-extra-val">'+fmtE(payoffExtra)+'</span></div>'
+    +'<input type="range" min="0" max="1000" step="25" value="'+payoffExtra+'" oninput="setPayoffExtra(this.value)" style="width:100%;accent-color:#E60000"/>'
+    +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tm);margin-top:2px"><span>'+EUR+'0</span><span>'+EUR+'500</span><span>'+EUR+'1000</span></div>'
+    +'<div class="irow" style="margin-top:8px;margin-bottom:0"><input type="text" inputmode="decimal" placeholder="Custom amount" value="'+payoffExtra+'" onfocus="if(parseFloat(this.value)===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=\'0\'" oninput="setPayoffExtra(this.value)" style="flex:1"/></div>'
+    +'</div>';
+
+  /* Balance-over-time chart */
+  html+='<div class="card"><div class="lbl" style="margin-bottom:8px">Remaining debt over time</div><div class="cw"><canvas id="payoffC" role="img" aria-label="Debt payoff projection"></canvas></div></div>';
+
+  /* Results (recalculated live) */
+  html+='<div id="payoff-results">'+payoffResultsHTML()+'</div>';
+
+  root.innerHTML=html;
+  drawPayoffChart();
+}
+
+function drawPayoffChart(){
+  var act=activeLoans().filter(function(l){return (l.balance||0)>0;});
+  if(act.length===0)return;
+  var withExtra=simulatePayoff(act,payoffExtra,'avalanche');
+  var noExtra=simulatePayoff(act,0,'avalanche');
+  /* Build labels by year markers */
+  var maxLen=Math.max(withExtra.schedule.length,noExtra.schedule.length);
+  var labels=[];
+  for(var i=0;i<maxLen;i++){labels.push(i%12===0?('Y'+(i/12)):'');}
+  mkChart('payoffC',{type:'line',data:{labels:labels,datasets:[
+    {label:'With '+fmtE(payoffExtra)+' extra',data:withExtra.schedule,borderColor:'#E60000',backgroundColor:'rgba(230,0,0,0.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2},
+    {label:'Minimums only',data:noExtra.schedule,borderColor:'#ACACAC',borderDash:[5,5],fill:false,tension:.3,pointRadius:0,borderWidth:1.5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc(),font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return' '+fmtE(ctx.parsed.y);}}}},scales:{y:{beginAtZero:true,ticks:{color:tc(),callback:function(v){return EUR+(v/1000).toFixed(0)+'k';}},grid:{color:gc()}},x:{ticks:{color:tc(),font:{size:10},maxRotation:0,autoSkip:false},grid:{display:false}}}}});
+}
 
 /* ══════════════════════════════════════════════
    TAB 4 — ANALYSIS
